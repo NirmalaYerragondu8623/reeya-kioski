@@ -1,0 +1,46 @@
+from uuid import UUID
+
+from pydantic import BaseModel, Field
+
+
+# --- Uploads ---
+
+class PresignRequest(BaseModel):
+    user_id: UUID
+    filename: str
+    content_type: str | None = None
+
+
+class PresignResponse(BaseModel):
+    upload_url: str
+    object_key: str
+    public_url: str
+
+
+# --- Image search ---
+
+class ImageSearchRequest(BaseModel):
+    s3_url: str
+    user_id: UUID
+
+
+class ProductMatch(BaseModel):
+    id: UUID
+    name: str
+    image_s3_url: str
+    similarity: float = Field(ge=-1, le=1)
+
+
+class ImageSearchResponse(BaseModel):
+    uploaded_image_id: UUID
+    matches: list[ProductMatch]
+
+
+# --- Products (used internally by index_catalog.py) ---
+
+class ProductIn(BaseModel):
+    id: UUID | None = None
+    name: str
+    category: str | None = None
+    price: float | None = None
+    image_s3_url: str

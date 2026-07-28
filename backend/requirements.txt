@@ -1,0 +1,11 @@
+fastapi>=0.115
+uvicorn[standard]>=0.34
+pydantic>=2.10
+pydantic-settings>=2.7
+supabase>=2.11
+boto3>=1.35
+transformers>=4.47
+torch>=2.5
+pillow>=11.0
+requests>=2.32
+numpy>=2.0
