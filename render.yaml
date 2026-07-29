@@ -1,0 +1,38 @@
+# Render Blueprint for the backend. Deploy via the Render dashboard:
+# New -> Blueprint -> connect this repo -> Render reads this file automatically.
+# Env vars marked sync: false must be filled in manually in the Render
+# dashboard after the service is created (never commit real secrets here).
+services:
+  - type: web
+    name: reeya-kioski-backend
+    runtime: python
+    rootDir: backend
+    plan: standard  # torch/transformers need more RAM than the free 512MB tier reliably provides
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: AWS_ACCESS_KEY_ID
+        sync: false
+      - key: AWS_SECRET_ACCESS_KEY
+        sync: false
+      - key: AWS_REGION
+        sync: false
+      - key: S3_BUCKET_NAME
+        sync: false
+      - key: EMBEDDING_MODEL_NAME
+        value: openai/clip-vit-base-patch32
+      - key: PRESIGN_EXPIRY_SECONDS
+        value: "300"
+      - key: PRODUCT_API_URL
+        sync: false
+      - key: PRODUCT_API_KEY
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: ALLOWED_ORIGINS
+        sync: false  # e.g. https://your-frontend.vercel.app,http://localhost:5173

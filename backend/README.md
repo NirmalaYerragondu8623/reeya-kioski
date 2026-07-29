@@ -248,3 +248,23 @@ again, e.g. for a client that can't do it locally.)
   migrations were implemented as `011`/`012` instead — if you're
   cross-referencing `ANALYTICS.md` against the actual `migrations/` folder,
   that's why the numbers don't match what the doc originally said.
+
+## Deployment (Render)
+
+`render.yaml` at the repo root is a Render Blueprint — `New -> Blueprint` in
+the Render dashboard, connect this repo, it reads the file automatically.
+Set `rootDir: backend` (already in the file) since this is a monorepo.
+
+Notes specific to this project:
+- **Plan size:** `torch`/`transformers` (CLIP) need more RAM than Render's
+  free 512MB tier reliably provides — the blueprint defaults to `standard`.
+- **Env vars:** everything in `.env.example` must be set in the Render
+  dashboard (marked `sync: false` in `render.yaml` so they're never
+  committed). Include `ALLOWED_ORIGINS` with your deployed frontend's exact
+  URL once you know it (see `app/main.py`'s CORS middleware).
+- **Cold start / model cache:** the CLIP model downloads from HuggingFace on
+  first use (lazy-loaded, see `embeddings.py`) and isn't cached across
+  deploys on Render's default ephemeral disk — the first embedding request
+  after each deploy will be slower while it re-downloads.
+- **Health check:** `/health` is already wired up; Render uses
+  `healthCheckPath` from the blueprint for zero-downtime deploys.
