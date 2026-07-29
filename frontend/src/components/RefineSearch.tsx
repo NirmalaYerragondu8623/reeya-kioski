@@ -1,4 +1,5 @@
 import { useState, type ComponentType, type SVGProps } from "react";
+import { CATEGORY_IMAGES } from "../lib/categoryImages";
 import { startVoiceSearch } from "../lib/voiceSearch";
 import { CATEGORIES } from "./CategoryGrid";
 import {
@@ -172,8 +173,20 @@ export function RefineSearch({
         <section className="mx-5 mt-6 rounded-2xl border border-gold/30 p-4">
           {category && (
             <div className="flex items-center gap-3">
-              <div className="flex size-16 shrink-0 items-center justify-center rounded-lg border border-gold/40 bg-gradient-to-b from-neutral-900 to-black">
-                {CategoryIcon && <CategoryIcon className="size-9 text-gold" />}
+              <div className="size-16 shrink-0 overflow-hidden rounded-lg border border-gold/40 bg-gradient-to-b from-neutral-900 to-black">
+                {category && CATEGORY_IMAGES[category] ? (
+                  <img
+                    src={CATEGORY_IMAGES[category]}
+                    alt={category}
+                    className="size-full object-cover"
+                  />
+                ) : (
+                  CategoryIcon && (
+                    <div className="flex size-full items-center justify-center">
+                      <CategoryIcon className="size-9 text-gold" />
+                    </div>
+                  )
+                )}
               </div>
               <div className="min-w-0 flex-1">
                 <p className="text-[11px] font-medium tracking-wide text-gold uppercase">

@@ -1,3 +1,5 @@
+from datetime import datetime
+from typing import Any
 from uuid import UUID
 
 from pydantic import BaseModel, Field
@@ -44,3 +46,12 @@ class ProductIn(BaseModel):
     category: str | None = None
     price: float | None = None
     image_s3_url: str
+
+
+# --- Analytics events ---
+
+class EventIn(BaseModel):
+    session_id: UUID
+    event_name: str
+    occurred_at: datetime
+    payload: dict[str, Any] = Field(default_factory=dict)

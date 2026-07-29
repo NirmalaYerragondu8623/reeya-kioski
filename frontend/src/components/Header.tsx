@@ -1,14 +1,15 @@
 import { useState } from "react";
 import { BRAND_NAME } from "../lib/brand";
 import { isVoiceSearchSupported, startVoiceSearch } from "../lib/voiceSearch";
-import { CameraIcon, DiamondIcon, MicIcon } from "./icons";
+import { CameraIcon, DiamondIcon, MicIcon, RefreshIcon } from "./icons";
 
 interface HeaderProps {
   onCameraClick?: () => void;
   onVoiceResult?: (transcript: string) => void;
+  onNewUser?: () => void;
 }
 
-export function Header({ onCameraClick, onVoiceResult }: HeaderProps) {
+export function Header({ onCameraClick, onVoiceResult, onNewUser }: HeaderProps) {
   const [isListening, setIsListening] = useState(false);
   const [voiceStatus, setVoiceStatus] = useState<string | null>(null);
 
@@ -39,20 +40,20 @@ export function Header({ onCameraClick, onVoiceResult }: HeaderProps) {
 
   return (
     <header className="px-5 pt-6">
-      <div className="flex items-center justify-between gap-3">
-        <div>
-          <p className="text-[11px] font-medium tracking-[0.35em] text-gold/70 uppercase">
-            {BRAND_NAME}
-          </p>
-          <h1
-            className="text-4xl text-gold"
-            style={{ fontFamily: "var(--font-serif-display)" }}
-          >
-            Products
-          </h1>
-        </div>
+      <div>
+        <p className="text-base font-medium tracking-[0.3em] text-gold/70 uppercase">
+          {BRAND_NAME}
+        </p>
+        <h1
+          className="text-4xl text-gold uppercase"
+          style={{ fontFamily: "var(--font-serif-display)" }}
+        >
+          Reeya Diamonds
+        </h1>
+      </div>
 
-        <div className="flex items-center gap-2 rounded-full border border-gold/50 py-1.5 pr-3 pl-2">
+      <div className="mt-4 flex items-center justify-between gap-3">
+        <div className="flex shrink-0 items-center gap-2 rounded-full border border-gold/50 py-1.5 pr-3 pl-2">
           <button
             type="button"
             onClick={handleMicClick}
@@ -78,6 +79,15 @@ export function Header({ onCameraClick, onVoiceResult }: HeaderProps) {
             what you want
           </span>
         </div>
+
+        <button
+          type="button"
+          onClick={onNewUser}
+          className="flex shrink-0 items-center gap-1.5 rounded-full border border-gold/40 px-3 py-1 text-[11px] font-medium text-gold/80"
+        >
+          <RefreshIcon className="size-3.5" />
+          New User
+        </button>
       </div>
 
       {voiceStatus && (

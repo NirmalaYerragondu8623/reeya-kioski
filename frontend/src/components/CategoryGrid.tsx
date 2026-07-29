@@ -1,4 +1,5 @@
-import type { ComponentType, SVGProps } from "react";
+import { useState, type ComponentType, type SVGProps } from "react";
+import { CATEGORY_IMAGES } from "../lib/categoryImages";
 import {
   BangleIcon,
   BraceletIcon,
@@ -29,6 +30,35 @@ interface CategoryGridProps {
   activeCategory?: string | null;
 }
 
+function CategoryThumbnail({
+  label,
+  Icon,
+}: {
+  label: string;
+  Icon: ComponentType<SVGProps<SVGSVGElement>>;
+}) {
+  const [imageFailed, setImageFailed] = useState(false);
+  const imageSrc = CATEGORY_IMAGES[label];
+
+  if (!imageSrc || imageFailed) {
+    return (
+      <div className="flex size-full items-center justify-center bg-gradient-to-b from-neutral-900 to-black">
+        <Icon className="size-10 text-gold" />
+      </div>
+    );
+  }
+
+  return (
+    <img
+      src={imageSrc}
+      alt={label}
+      loading="lazy"
+      onError={() => setImageFailed(true)}
+      className="size-full object-cover"
+    />
+  );
+}
+
 export function CategoryGrid({ onSelect, activeCategory }: CategoryGridProps) {
   return (
     <div className="grid grid-cols-3 gap-3 px-5 pt-6">
@@ -39,12 +69,12 @@ export function CategoryGrid({ onSelect, activeCategory }: CategoryGridProps) {
             key={label}
             type="button"
             onClick={() => onSelect?.(isActive ? "" : label)}
-            className={`flex flex-col items-center gap-3 rounded-xl border bg-gradient-to-b from-neutral-900 to-black px-2 py-5 transition-colors ${
+            className={`relative aspect-[3/4] overflow-hidden rounded-xl border transition-colors ${
               isActive ? "border-gold" : "border-gold/40"
             }`}
           >
-            <Icon className="size-10 text-gold" />
-            <div className="flex flex-col items-center gap-1">
+            <CategoryThumbnail label={label} Icon={Icon} />
+            <div className="absolute inset-x-0 bottom-0 flex flex-col items-center gap-1 bg-gradient-to-t from-black/90 via-black/40 to-transparent px-2 pt-8 pb-3">
               <span className="text-[11px] font-bold tracking-wide text-white uppercase">
                 {label}
               </span>
