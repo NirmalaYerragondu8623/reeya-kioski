@@ -1,5 +1,29 @@
 import type { SVGProps } from "react";
 
+export function FilterIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} {...props}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M4 5h16l-6 7.5V19l-4 2v-8.5L4 5Z" />
+    </svg>
+  );
+}
+
+export function CheckIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} {...props}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="m5 12.5 4.5 4.5L19 7" />
+    </svg>
+  );
+}
+
+export function CloseIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} {...props}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M6 6l12 12M18 6 6 18" />
+    </svg>
+  );
+}
+
 export function ArrowRightIcon(props: SVGProps<SVGSVGElement>) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} {...props}>
@@ -124,27 +148,6 @@ export function DiamondIcon(props: SVGProps<SVGSVGElement>) {
         d="M7 4h10l4 5-9 11L3 9l4-5Z"
       />
       <path strokeLinecap="round" strokeLinejoin="round" d="M3 9h18M9 4l3 5-3 11M15 4l-3 5 3 11" />
-    </svg>
-  );
-}
-
-export function HeartIcon(props: SVGProps<SVGSVGElement>) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} {...props}>
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M12 20.5s-7.5-4.6-9.9-9A5.4 5.4 0 0 1 12 6.3 5.4 5.4 0 0 1 21.9 11.5c-2.4 4.4-9.9 9-9.9 9Z"
-      />
-    </svg>
-  );
-}
-
-export function SearchIcon(props: SVGProps<SVGSVGElement>) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} {...props}>
-      <circle cx="10.5" cy="10.5" r="6.5" />
-      <path strokeLinecap="round" d="m20 20-4.3-4.3" />
     </svg>
   );
 }

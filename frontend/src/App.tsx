@@ -1,12 +1,10 @@
 import { useEffect, useRef, useState } from "react";
-import { BottomNav } from "./components/BottomNav";
 import { CartBar } from "./components/CartBar";
 import { CATEGORY_LABELS, CategoryGrid } from "./components/CategoryGrid";
 import { Header } from "./components/Header";
 import { RefineSearch, type Preferences } from "./components/RefineSearch";
 import { ResultsGrid } from "./components/ResultsGrid";
-import { SearchBar } from "./components/SearchBar";
-import { TopSellersBanner } from "./components/TopSellersBanner";
+import { UploadedImages, type UploadedImage } from "./components/UploadedImages";
 import { findSimilarProducts, type ProductMatch } from "./lib/api";
 import { initSession, startNewSession, trackEvent } from "./lib/analytics";
 import { cartTotal } from "./lib/cart";
@@ -22,9 +20,9 @@ function App() {
   const [error, setError] = useState<string | null>(null);
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [voiceQuery, setVoiceQuery] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState("Products");
   const [cart, setCart] = useState<ProductMatch[]>([]);
   const [orderMessage, setOrderMessage] = useState<string | null>(null);
+  const [uploadedImages, setUploadedImages] = useState<UploadedImage[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -100,12 +98,13 @@ function App() {
     setError(null);
     setActiveCategory(null);
     setVoiceQuery(null);
-    setActiveTab("Products");
     setView("products");
   }
 
   async function handleSelect(file: File) {
-    setPreviewUrl(URL.createObjectURL(file));
+    const url = URL.createObjectURL(file);
+    setPreviewUrl(url);
+    setUploadedImages((prev) => [{ id: crypto.randomUUID(), url }, ...prev]);
     setStatus("loading");
     setError(null);
     try {
@@ -138,22 +137,22 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen bg-black text-white">
-      <div className="mx-auto max-w-md pb-28">
+    <div className="flex min-h-screen flex-col bg-black text-white">
+      <div
+        className={`mx-auto flex w-full max-w-[700px] flex-1 flex-col ${cart.length > 0 ? "pb-20" : ""}`}
+      >
         <Header
           onCameraClick={() => fileInputRef.current?.click()}
           onVoiceResult={handleQuery}
           onNewUser={handleNewUser}
         />
 
-        <SearchBar onSearch={handleQuery} />
-
         <CategoryGrid
           activeCategory={activeCategory}
           onSelect={handleCategorySelect}
         />
 
-        <TopSellersBanner />
+        <UploadedImages images={uploadedImages} />
 
         <input
           ref={fileInputRef}
@@ -202,7 +201,6 @@ function App() {
       </div>
 
       <CartBar items={cart} onPlaceOrder={handlePlaceOrder} />
-      <BottomNav active={activeTab} onSelect={setActiveTab} />
     </div>
   );
 }

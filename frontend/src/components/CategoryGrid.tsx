@@ -61,7 +61,7 @@ function CategoryThumbnail({
 
 export function CategoryGrid({ onSelect, activeCategory }: CategoryGridProps) {
   return (
-    <div className="grid grid-cols-3 gap-3 px-5 pt-6">
+    <div className="grid flex-1 grid-cols-3 grid-rows-2 gap-2 px-3 py-4">
       {CATEGORIES.map(({ label, Icon }) => {
         const isActive = activeCategory === label;
         return (
@@ -69,16 +69,16 @@ export function CategoryGrid({ onSelect, activeCategory }: CategoryGridProps) {
             key={label}
             type="button"
             onClick={() => onSelect?.(isActive ? "" : label)}
-            className={`relative aspect-[3/4] overflow-hidden rounded-xl border transition-colors ${
+            className={`relative h-full overflow-hidden rounded-xl border transition-colors ${
               isActive ? "border-gold" : "border-gold/40"
             }`}
           >
             <CategoryThumbnail label={label} Icon={Icon} />
-            <div className="absolute inset-x-0 bottom-0 flex flex-col items-center gap-1 bg-gradient-to-t from-black/90 via-black/40 to-transparent px-2 pt-8 pb-3">
-              <span className="text-[11px] font-bold tracking-wide text-white uppercase">
+            <div className="absolute inset-x-0 bottom-0 flex flex-col items-center gap-1.5 bg-gradient-to-t from-black/90 via-black/40 to-transparent px-2 pt-10 pb-4">
+              <span className="text-sm font-bold tracking-wide text-white uppercase">
                 {label}
               </span>
-              <span className="h-px w-5 bg-gold/70" />
+              <span className="h-px w-6 bg-gold/70" />
             </div>
           </button>
         );

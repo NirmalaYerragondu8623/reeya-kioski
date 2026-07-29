@@ -1,7 +1,7 @@
-import { useState } from "react";
-import { BRAND_NAME } from "../lib/brand";
+import { useRef, useState } from "react";
 import { isVoiceSearchSupported, startVoiceSearch } from "../lib/voiceSearch";
 import { CameraIcon, DiamondIcon, MicIcon, RefreshIcon } from "./icons";
+import { VoicePopup } from "./VoicePopup";
 
 interface HeaderProps {
   onCameraClick?: () => void;
@@ -11,46 +11,64 @@ interface HeaderProps {
 
 export function Header({ onCameraClick, onVoiceResult, onNewUser }: HeaderProps) {
   const [isListening, setIsListening] = useState(false);
-  const [voiceStatus, setVoiceStatus] = useState<string | null>(null);
+  const [transcript, setTranscript] = useState("");
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const stopRef = useRef<(() => void) | null>(null);
 
-  function showStatus(message: string) {
-    setVoiceStatus(message);
-    window.setTimeout(() => setVoiceStatus(null), 3000);
+  const isPopupOpen = isListening || transcript.length > 0 || errorMessage !== null;
+
+  function resetVoiceState() {
+    setIsListening(false);
+    setTranscript("");
+    setErrorMessage(null);
+    stopRef.current = null;
   }
 
   function handleMicClick() {
     if (isListening) return;
 
+    setTranscript("");
+    setErrorMessage(null);
+
     if (!isVoiceSearchSupported()) {
-      showStatus("Voice search isn't supported in this browser.");
+      setErrorMessage("Voice search isn't supported in this browser.");
       return;
     }
 
     setIsListening(true);
-    setVoiceStatus("Listening...");
-    startVoiceSearch(
-      (transcript) => {
-        showStatus(`Heard: "${transcript}"`);
-        onVoiceResult?.(transcript);
-      },
+    stopRef.current = startVoiceSearch(
+      (text) => setTranscript(text),
       () => setIsListening(false),
-      (message) => showStatus(message),
+      (message) => {
+        setErrorMessage(message);
+        setIsListening(false);
+      },
     );
+  }
+
+  function handleStop() {
+    stopRef.current?.();
+  }
+
+  function handleCancel() {
+    stopRef.current?.();
+    resetVoiceState();
+  }
+
+  function handleConfirm() {
+    stopRef.current?.();
+    onVoiceResult?.(transcript);
+    resetVoiceState();
   }
 
   return (
     <header className="px-5 pt-6">
-      <div>
-        <p className="text-base font-medium tracking-[0.3em] text-gold/70 uppercase">
-          {BRAND_NAME}
-        </p>
-        <h1
-          className="text-4xl text-gold uppercase"
-          style={{ fontFamily: "var(--font-serif-display)" }}
-        >
-          Reeya Diamonds
-        </h1>
-      </div>
+      <h1
+        className="text-4xl text-gold uppercase"
+        style={{ fontFamily: "var(--font-serif-display)" }}
+      >
+        Reeya Diamonds
+      </h1>
 
       <div className="mt-4 flex items-center justify-between gap-3">
         <div className="flex shrink-0 items-center gap-2 rounded-full border border-gold/50 py-1.5 pr-3 pl-2">
@@ -90,15 +108,22 @@ export function Header({ onCameraClick, onVoiceResult, onNewUser }: HeaderProps)
         </button>
       </div>
 
-      {voiceStatus && (
-        <p className="mt-2 text-center text-xs text-gold/80">{voiceStatus}</p>
-      )}
-
       <div className="mt-5 flex items-center gap-3 text-gold/60">
         <span className="h-px flex-1 bg-gold/30" />
         <DiamondIcon className="size-2.5 fill-gold stroke-none" />
         <span className="h-px flex-1 bg-gold/30" />
       </div>
+
+      {isPopupOpen && (
+        <VoicePopup
+          isListening={isListening}
+          transcript={transcript}
+          errorMessage={errorMessage}
+          onStop={handleStop}
+          onCancel={handleCancel}
+          onConfirm={handleConfirm}
+        />
+      )}
     </header>
   );
 }

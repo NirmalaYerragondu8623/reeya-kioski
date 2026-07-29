@@ -6,13 +6,16 @@ import {
   AccountIcon,
   ArrowLeftIcon,
   ArrowRightIcon,
+  ChevronDownIcon,
+  CloseIcon,
   DiamondIcon,
+  FilterIcon,
   MicIcon,
   PencilIcon,
   PriceTagIcon,
-  SlidersIcon,
   SparkleIcon,
 } from "./icons";
+import { RelatedDesigns } from "./RelatedDesigns";
 
 const AGE_GROUPS = ["Below 18", "18 – 25", "26 – 35", "36 – 45", "Above 45"];
 const PRICE_BANDS = [
@@ -77,38 +80,55 @@ function PillGroup({
   );
 }
 
-function PreferenceCard({
-  Icon,
-  title,
-  subtitle,
-  options,
-  value,
-  onChange,
-}: {
+interface FilterConfig {
+  key: string;
   Icon: ComponentType<SVGProps<SVGSVGElement>>;
   title: string;
   subtitle: string;
   options: string[];
   value: string | null;
   onChange: (value: string | null) => void;
+}
+
+function FilterCard({
+  Icon,
+  title,
+  options,
+  value,
+  onChange,
+  isExpanded,
+  onToggle,
+}: {
+  Icon: ComponentType<SVGProps<SVGSVGElement>>;
+  title: string;
+  options: string[];
+  value: string | null;
+  onChange: (value: string | null) => void;
+  isExpanded: boolean;
+  onToggle: () => void;
 }) {
   return (
-    <div className="rounded-2xl border border-gold/30 p-4">
-      <div className="flex gap-3">
-        <Icon className="mt-0.5 size-6 shrink-0 text-gold" />
-        <div>
-          <p className="text-sm font-semibold text-white">
-            {title}{" "}
-            <span className="text-xs font-normal text-neutral-500">
-              (Optional)
-            </span>
-          </p>
-          <p className="mt-0.5 text-xs text-neutral-500">{subtitle}</p>
+    <div className="rounded-2xl border border-gold/40 bg-black">
+      <button
+        type="button"
+        onClick={onToggle}
+        className="flex w-full flex-col items-center gap-1 px-2 py-3 text-center"
+      >
+        <Icon className="size-5 shrink-0 text-gold" />
+        <span className="text-[11px] leading-tight font-semibold text-white">
+          {title}
+        </span>
+        <ChevronDownIcon
+          className={`size-3.5 shrink-0 text-gold transition-transform ${
+            isExpanded ? "rotate-180" : ""
+          }`}
+        />
+      </button>
+      {isExpanded && (
+        <div className="border-t border-gold/20 p-3">
+          <PillGroup options={options} value={value} onChange={onChange} />
         </div>
-      </div>
-      <div className="mt-3">
-        <PillGroup options={options} value={value} onChange={onChange} />
-      </div>
+      )}
     </div>
   );
 }
@@ -125,8 +145,56 @@ export function RefineSearch({
   const [priceBand, setPriceBand] = useState<string | null>(null);
   const [usage, setUsage] = useState<string | null>(null);
   const [isListening, setIsListening] = useState(false);
+  const [isPreferencesExpanded, setIsPreferencesExpanded] = useState(false);
+  const [expandedFilterKeys, setExpandedFilterKeys] = useState<string[]>([
+    "ageGroup",
+  ]);
 
   const CategoryIcon = CATEGORIES.find((c) => c.label === category)?.Icon;
+
+  const filters: FilterConfig[] = [
+    {
+      key: "ageGroup",
+      Icon: AccountIcon,
+      title: "Age Group",
+      subtitle: "This helps us show designs that suit your style.",
+      options: AGE_GROUPS,
+      value: ageGroup,
+      onChange: setAgeGroup,
+    },
+    {
+      key: "priceBand",
+      Icon: PriceTagIcon,
+      title: "Price Band",
+      subtitle: "Let us know your budget range.",
+      options: PRICE_BANDS,
+      value: priceBand,
+      onChange: setPriceBand,
+    },
+    {
+      key: "usage",
+      Icon: DiamondIcon,
+      title: "Usage",
+      subtitle: "What's the primary use?",
+      options: USAGE_OPTIONS,
+      value: usage,
+      onChange: setUsage,
+    },
+  ];
+
+  function toggleFilterKey(key: string) {
+    setExpandedFilterKeys((prev) =>
+      prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key],
+    );
+  }
+
+  const selectedFilters = [
+    { label: "Age Group", value: ageGroup },
+    { label: "Price Band", value: priceBand },
+    { label: "Usage", value: usage },
+  ].filter(
+    (filter): filter is { label: string; value: string } => filter.value !== null,
+  );
 
   function handleRetryVoice() {
     if (isListening) return;
@@ -236,42 +304,80 @@ export function RefineSearch({
         </section>
       )}
 
-      <div className="mt-7 flex items-center gap-2 px-5">
-        <SlidersIcon className="size-5 text-gold" />
-        <h2
-          className="text-xl"
-          style={{ fontFamily: "var(--font-serif-display)" }}
+      <div className="mx-5 mt-6 rounded-2xl border border-gold/40 bg-black">
+        <div
+          onClick={() => setIsPreferencesExpanded((v) => !v)}
+          className="flex cursor-pointer items-center gap-3 px-3 py-2.5"
         >
-          Tell us your preferences
-        </h2>
+          <span className="flex shrink-0 items-center gap-1.5 text-xs font-bold tracking-wide text-gold uppercase">
+            <FilterIcon className="size-4" />
+            {selectedFilters.length > 0 ? "Selected" : "Preferences"}
+          </span>
+
+          {selectedFilters.length > 0 ? (
+            <div className="flex flex-1 items-center gap-2 overflow-x-auto">
+              {selectedFilters.map((filter) => (
+                <div
+                  key={filter.label}
+                  className="flex shrink-0 items-center gap-2 rounded-full border border-gold/40 bg-[#1a1a1a] px-3 py-1.5"
+                >
+                  <span className="text-[10px] tracking-wide text-neutral-400 uppercase">
+                    {filter.label}
+                  </span>
+                  <span className="h-3 w-px shrink-0 bg-gold/30" />
+                  <span className="flex items-center gap-1 text-xs font-bold whitespace-nowrap text-white">
+                    {filter.value}
+                    <ChevronDownIcon className="size-3 shrink-0 text-gold" />
+                  </span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <span className="flex-1 text-xs text-neutral-500">
+              Tap to tell us your preferences
+            </span>
+          )}
+
+          {selectedFilters.length > 0 && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleResetPreferences();
+              }}
+              aria-label="Clear all filters"
+              className="shrink-0 text-gold/70"
+            >
+              <CloseIcon className="size-4" />
+            </button>
+          )}
+
+          <ChevronDownIcon
+            className={`size-4 shrink-0 text-gold transition-transform ${
+              isPreferencesExpanded ? "rotate-180" : ""
+            }`}
+          />
+        </div>
+
+        {isPreferencesExpanded && (
+          <div className="grid grid-cols-3 items-start gap-2 border-t border-gold/20 px-3 py-4">
+            {filters.map((filter) => (
+              <FilterCard
+                key={filter.key}
+                Icon={filter.Icon}
+                title={filter.title}
+                options={filter.options}
+                value={filter.value}
+                onChange={filter.onChange}
+                isExpanded={expandedFilterKeys.includes(filter.key)}
+                onToggle={() => toggleFilterKey(filter.key)}
+              />
+            ))}
+          </div>
+        )}
       </div>
 
-      <div className="mt-4 flex flex-col gap-4 px-5">
-        <PreferenceCard
-          Icon={AccountIcon}
-          title="Age Group"
-          subtitle="This helps us show designs that suit your style."
-          options={AGE_GROUPS}
-          value={ageGroup}
-          onChange={setAgeGroup}
-        />
-        <PreferenceCard
-          Icon={PriceTagIcon}
-          title="Price Band"
-          subtitle="Let us know your budget range."
-          options={PRICE_BANDS}
-          value={priceBand}
-          onChange={setPriceBand}
-        />
-        <PreferenceCard
-          Icon={DiamondIcon}
-          title="Usage"
-          subtitle="What's the primary use?"
-          options={USAGE_OPTIONS}
-          value={usage}
-          onChange={setUsage}
-        />
-      </div>
+      <RelatedDesigns category={category} preferences={{ ageGroup, priceBand, usage }} />
 
       <div className="fixed inset-x-0 bottom-0 border-t border-gold/30 bg-black px-5 py-4">
         <div className="mx-auto flex max-w-md gap-3">
