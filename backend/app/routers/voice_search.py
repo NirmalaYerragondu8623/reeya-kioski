@@ -21,6 +21,19 @@ def voice_search(payload: VoiceSearchRequest) -> VoiceSearchResponse:
     user_id = payload.user_id
     filters = extract_search_filters(transcript)
 
+    # Explicit selections (e.g. Refine Search's preference pills) override
+    # whatever the LLM extracted from the transcript. Values are normalized
+    # to lowercase since the frontend's category labels are Title Case
+    # ("Earrings") but our vocabularies/CHECK constraints are lowercase.
+    if payload.category:
+        filters["category"] = payload.category.strip().lower()
+    if payload.price_band:
+        filters["price_band"] = payload.price_band.strip().lower()
+    if payload.age_group:
+        filters["age_group"] = payload.age_group.strip().lower()
+    if payload.usage:
+        filters["usage"] = payload.usage.strip().lower()
+
     supabase = get_supabase_client()
     query = supabase.table("products").select("id, name, image_s3_url, price, category")
 

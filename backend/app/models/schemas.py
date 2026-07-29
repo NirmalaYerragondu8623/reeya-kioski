@@ -52,6 +52,14 @@ class ProductIn(BaseModel):
 class VoiceSearchRequest(BaseModel):
     transcript: str
     user_id: UUID
+    # Explicit filter selections (e.g. from the Refine Search preference
+    # pills) — when set, these take precedence over whatever
+    # extract_search_filters() infers from the transcript, so a user's
+    # manual choice always wins over the LLM's guess.
+    category: str | None = None
+    price_band: str | None = None
+    age_group: str | None = None
+    usage: str | None = None
 
 
 class ExtractedFilters(BaseModel):

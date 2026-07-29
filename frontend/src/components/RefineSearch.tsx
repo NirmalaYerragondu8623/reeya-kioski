@@ -1,5 +1,10 @@
 import { useState, type ComponentType, type SVGProps } from "react";
 import { CATEGORY_IMAGES } from "../lib/categoryImages";
+import {
+  AGE_GROUP_OPTIONS,
+  PRICE_BAND_OPTIONS,
+  USAGE_OPTIONS,
+} from "../lib/preferenceOptions";
 import { startVoiceSearch } from "../lib/voiceSearch";
 import { CATEGORIES } from "./CategoryGrid";
 import {
@@ -14,22 +19,6 @@ import {
   SparkleIcon,
 } from "./icons";
 
-const AGE_GROUPS = ["Below 18", "18 – 25", "26 – 35", "36 – 45", "Above 45"];
-const PRICE_BANDS = [
-  "Below ₹10K",
-  "₹10K – ₹25K",
-  "₹25K – ₹50K",
-  "₹50K – ₹1L",
-  "Above ₹1L",
-];
-const USAGE_OPTIONS = [
-  "Daily Wear",
-  "Office Wear",
-  "Party Wear",
-  "Festive",
-  "Bridal",
-];
-
 export interface Preferences {
   ageGroup: string | null;
   priceBand: string | null;
@@ -39,13 +28,15 @@ export interface Preferences {
 interface RefineSearchProps {
   category: string | null;
   voiceQuery: string | null;
+  error?: string | null;
+  isSubmitting?: boolean;
   onBack: () => void;
   onChangeCategory: () => void;
   onVoiceUpdated: (transcript: string) => void;
   onConfirm: (preferences: Preferences) => void;
 }
 
-function PillGroup({
+export function PillGroup({
   options,
   value,
   onChange,
@@ -116,6 +107,8 @@ function PreferenceCard({
 export function RefineSearch({
   category,
   voiceQuery,
+  error,
+  isSubmitting,
   onBack,
   onChangeCategory,
   onVoiceUpdated,
@@ -251,7 +244,7 @@ export function RefineSearch({
           Icon={AccountIcon}
           title="Age Group"
           subtitle="This helps us show designs that suit your style."
-          options={AGE_GROUPS}
+          options={AGE_GROUP_OPTIONS}
           value={ageGroup}
           onChange={setAgeGroup}
         />
@@ -259,7 +252,7 @@ export function RefineSearch({
           Icon={PriceTagIcon}
           title="Price Band"
           subtitle="Let us know your budget range."
-          options={PRICE_BANDS}
+          options={PRICE_BAND_OPTIONS}
           value={priceBand}
           onChange={setPriceBand}
         />
@@ -274,6 +267,9 @@ export function RefineSearch({
       </div>
 
       <div className="fixed inset-x-0 bottom-0 border-t border-gold/30 bg-black px-5 py-4">
+        {error && (
+          <p className="mx-auto max-w-md pb-2 text-center text-xs text-red-400">{error}</p>
+        )}
         <div className="mx-auto flex max-w-md gap-3">
           <button
             type="button"
@@ -285,11 +281,12 @@ export function RefineSearch({
           </button>
           <button
             type="button"
+            disabled={isSubmitting}
             onClick={() => onConfirm({ ageGroup, priceBand, usage })}
-            className="flex flex-[1.4] items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#b8860b] via-[#f5d78e] to-[#b8860b] py-3 text-sm font-semibold text-black"
+            className="flex flex-[1.4] items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#b8860b] via-[#f5d78e] to-[#b8860b] py-3 text-sm font-semibold text-black disabled:opacity-60"
           >
-            Yes, Show My Results
-            <ArrowRightIcon className="size-4" />
+            {isSubmitting ? "Searching..." : "Yes, Show My Results"}
+            {!isSubmitting && <ArrowRightIcon className="size-4" />}
           </button>
         </div>
       </div>
