@@ -44,7 +44,11 @@ def voice_search(payload: VoiceSearchRequest) -> VoiceSearchResponse:
     price_band = filters.get("price_band")
     if price_band and price_band in PRICE_BAND_RANGES:
         min_price, max_price = PRICE_BAND_RANGES[price_band]
-        query = query.gte("price", min_price)
+        # price = 0 means "no real price set" (see products.price_range's
+        # 'Unknown' bucket), not a genuinely free/near-free item — exclude
+        # it explicitly, since price >= 0 would otherwise let it leak into
+        # the cheapest band.
+        query = query.gt("price", 0).gte("price", min_price)
         if max_price is not None:
             query = query.lt("price", max_price)
 
