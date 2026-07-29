@@ -26,6 +26,10 @@ class Settings(BaseSettings):
     product_api_url: str = ""
     product_api_key: str = ""
 
+    # Voice search: filter extraction from a transcript (extract_filters.py).
+    # Transcription itself happens client-side (browser Web Speech API), not here.
+    openai_api_key: str = ""
+
 
 @lru_cache
 def get_settings() -> Settings:

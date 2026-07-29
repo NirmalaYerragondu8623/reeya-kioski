@@ -1,3 +1,4 @@
+from datetime import datetime
 from uuid import UUID
 
 from pydantic import BaseModel, Field
@@ -44,3 +45,57 @@ class ProductIn(BaseModel):
     category: str | None = None
     price: float | None = None
     image_s3_url: str
+
+
+# --- Voice search ---
+
+class VoiceSearchRequest(BaseModel):
+    transcript: str
+    user_id: UUID
+
+
+class ExtractedFilters(BaseModel):
+    category: str | None = None
+    price_band: str | None = None
+    age_group: str | None = None
+    usage: str | None = None
+
+
+class VoiceMatch(BaseModel):
+    id: UUID
+    name: str
+    image_s3_url: str
+    price: float | None = None
+    category: str | None = None
+
+
+class VoiceSearchResponse(BaseModel):
+    search_history_id: UUID
+    transcript: str
+    extracted_filters: ExtractedFilters
+    matches: list[VoiceMatch]
+
+
+class SearchHistoryItem(BaseModel):
+    id: UUID
+    user_id: UUID
+    transcript: str
+    category: str | None = None
+    price_band: str | None = None
+    age_group: str | None = None
+    usage: str | None = None
+    search_type: str
+    created_at: datetime
+
+
+# --- Kiosk analytics (see ANALYTICS.md) ---
+
+class KioskEventRequest(BaseModel):
+    session_id: UUID
+    event_name: str
+    occurred_at: datetime
+    payload: dict = Field(default_factory=dict)
+
+
+class KioskEventResponse(BaseModel):
+    status: str

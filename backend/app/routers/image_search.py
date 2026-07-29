@@ -1,10 +1,12 @@
 import logging
+import re
 
 import requests
 from fastapi import APIRouter, HTTPException, Query
 
 from app.models.schemas import ImageSearchRequest, ImageSearchResponse, ProductMatch
 from app.services.embeddings import get_image_embedding
+from app.services.filter_constants import CATEGORY_PATTERNS
 from app.services.s3 import download_image_bytes
 from app.services.supabase import get_supabase_client
 
@@ -27,13 +29,22 @@ def image_search(
 
     embedding = get_image_embedding(image_bytes)
 
+    # match_products does a regex match, not exact equality (see migration
+    # 010) — translate a known category label (e.g. "Earrings") to its
+    # curated pattern (e.g. "earring|stud"). An unrecognized category string
+    # falls back to a literal, regex-escaped substring match on itself, so
+    # arbitrary category text still works, just without the curated synonyms.
+    category_pattern = None
+    if category:
+        category_pattern = CATEGORY_PATTERNS.get(category.strip().lower(), re.escape(category))
+
     supabase = get_supabase_client()
     result = supabase.rpc(
         "match_products",
         {
             "query_embedding": embedding,
             "match_count": MATCH_COUNT,
-            "filter_category": category,
+            "filter_category": category_pattern,
         },
     ).execute()
 
