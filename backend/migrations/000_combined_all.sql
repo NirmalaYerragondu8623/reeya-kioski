@@ -103,3 +103,98 @@ alter table products add column if not exists source_product_id bigint;
 
 create unique index if not exists products_source_product_id_key
     on products (source_product_id);
+
+-- ===== 008_add_price_range.sql =====
+alter table products add column if not exists price_range text generated always as (
+    case
+        when price is null or price = 0 then 'Unknown'
+        when price < 10000 then 'Below 10K'
+        when price < 25000 then '10K-25K'
+        when price < 50000 then '25K-50K'
+        when price < 100000 then '50K-1L'
+        else 'Above 1L'
+    end
+) stored;
+
+create index if not exists products_price_range_idx on products (price_range);
+
+-- ===== 009_add_voice_search.sql =====
+alter table products add column if not exists usage text
+    check (usage in ('daily_wear', 'office_wear', 'party_wear', 'festive', 'bridal'));
+
+alter table products add column if not exists age_group text
+    check (age_group in ('below_18', '18_25', '26_35', '36_45', 'above_45'));
+
+create table if not exists search_history (
+    id           uuid primary key default gen_random_uuid(),
+    user_id      uuid not null,
+    transcript   text not null,
+    category     text check (category in ('earrings', 'pendants', 'necklace', 'rings', 'bangles', 'bracelets')),
+    price_band   text check (price_band in ('below_10k', '10k_25k', '25k_50k', '50k_1l', 'above_1l')),
+    age_group    text check (age_group in ('below_18', '18_25', '26_35', '36_45', 'above_45')),
+    usage        text check (usage in ('daily_wear', 'office_wear', 'party_wear', 'festive', 'bridal')),
+    search_type  text not null default 'voice',
+    created_at   timestamptz not null default now()
+);
+
+create index if not exists search_history_user_id_idx on search_history (user_id);
+
+alter table search_history enable row level security;
+
+drop policy if exists "search_history_owner_select" on search_history;
+create policy "search_history_owner_select"
+    on search_history
+    for select
+    using (auth.uid() = user_id);
+
+drop policy if exists "search_history_owner_insert" on search_history;
+create policy "search_history_owner_insert"
+    on search_history
+    for insert
+    with check (auth.uid() = user_id);
+
+-- ===== 010_fix_match_products_category_filter.sql =====
+create or replace function match_products(
+    query_embedding vector(512),
+    match_count int default 20,
+    filter_category text default null
+)
+returns table (
+    id uuid,
+    name text,
+    image_s3_url text,
+    similarity float
+)
+language sql
+stable
+as $$
+    select
+        products.id,
+        products.name,
+        products.image_s3_url,
+        1 - (products.embedding <=> query_embedding) as similarity
+    from products
+    where
+        products.embedding is not null
+        and (filter_category is null or products.category ~* filter_category)
+    order by products.embedding <=> query_embedding
+    limit match_count;
+$$;
+
+-- ===== 011_create_kiosk_events_table.sql =====
+create table if not exists kiosk_events (
+    id           uuid primary key default gen_random_uuid(),
+    session_id   uuid not null,
+    event_name   text not null,
+    occurred_at  timestamptz not null,
+    payload      jsonb not null default '{}'::jsonb,
+    created_at   timestamptz not null default now()
+);
+
+-- ===== 012_kiosk_events_indexes_and_rls.sql =====
+create index if not exists kiosk_events_session_id_idx on kiosk_events (session_id);
+create index if not exists kiosk_events_event_name_idx on kiosk_events (event_name);
+create index if not exists kiosk_events_occurred_at_idx on kiosk_events (occurred_at);
+create index if not exists kiosk_events_payload_gin_idx on kiosk_events using gin (payload);
+
+alter table kiosk_events enable row level security;

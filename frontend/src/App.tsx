@@ -1,16 +1,35 @@
 import { useEffect, useRef, useState } from "react";
+import { BottomNav } from "./components/BottomNav";
 import { CartBar } from "./components/CartBar";
 import { CATEGORY_LABELS, CategoryGrid } from "./components/CategoryGrid";
 import { Header } from "./components/Header";
 import { RefineSearch, type Preferences } from "./components/RefineSearch";
 import { ResultsGrid } from "./components/ResultsGrid";
+import { SearchBar } from "./components/SearchBar";
+import { TopSellersBanner } from "./components/TopSellersBanner";
 import { UploadedImages, type UploadedImage } from "./components/UploadedImages";
-import { findSimilarProducts, type ProductMatch } from "./lib/api";
+import { VoiceResults } from "./components/VoiceResults";
+import {
+  findSimilarProducts,
+  voiceSearch,
+  type ProductMatch,
+  type VoiceMatch,
+  type VoiceSearchResponse,
+} from "./lib/api";
 import { initSession, startNewSession, trackEvent } from "./lib/analytics";
 import { cartTotal } from "./lib/cart";
+import {
+  AGE_GROUP_OPTIONS,
+  AGE_GROUP_VALUES,
+  PRICE_BAND_OPTIONS,
+  PRICE_BAND_VALUES,
+  USAGE_OPTIONS,
+  USAGE_VALUES,
+  labelToValue,
+} from "./lib/preferenceOptions";
 
 type Status = "idle" | "loading" | "done" | "error";
-type View = "products" | "refine";
+type View = "products" | "refine" | "voice-results";
 
 function App() {
   const [view, setView] = useState<View>("products");
@@ -20,8 +39,11 @@ function App() {
   const [error, setError] = useState<string | null>(null);
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [voiceQuery, setVoiceQuery] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState("Products");
   const [cart, setCart] = useState<ProductMatch[]>([]);
   const [orderMessage, setOrderMessage] = useState<string | null>(null);
+  const [voiceSearchResult, setVoiceSearchResult] = useState<VoiceSearchResponse | null>(null);
+  const [voiceSearchError, setVoiceSearchError] = useState<string | null>(null);
   const [uploadedImages, setUploadedImages] = useState<UploadedImage[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -51,11 +73,33 @@ function App() {
     setView("refine");
   }
 
-  function handleConfirmPreferences(_preferences: Preferences) {
-    // Preferences are collected client-side only for now — the backend's
-    // /image-search endpoint currently only accepts a category filter.
-    setView("products");
-    fileInputRef.current?.click();
+  async function handleConfirmPreferences(preferences: Preferences) {
+    setVoiceSearchError(null);
+    setStatus("loading");
+    try {
+      const result = await voiceSearch(voiceQuery ?? "", {
+        category: activeCategory ?? undefined,
+        age_group: labelToValue(AGE_GROUP_OPTIONS, AGE_GROUP_VALUES, preferences.ageGroup),
+        price_band: labelToValue(PRICE_BAND_OPTIONS, PRICE_BAND_VALUES, preferences.priceBand),
+        usage: labelToValue(USAGE_OPTIONS, USAGE_VALUES, preferences.usage),
+      });
+      setVoiceSearchResult(result);
+      setStatus("idle");
+      setView("voice-results");
+    } catch (err) {
+      setVoiceSearchError(
+        err instanceof Error ? err.message : "Something went wrong searching for that.",
+      );
+      setStatus("idle");
+    }
+  }
+
+  function handleVoiceProductView(product: VoiceMatch) {
+    trackEvent("product_viewed", {
+      product_id: product.id,
+      product_name: product.name,
+      category_name: product.category,
+    });
   }
 
   function handleProductView(product: ProductMatch) {
@@ -98,6 +142,9 @@ function App() {
     setError(null);
     setActiveCategory(null);
     setVoiceQuery(null);
+    setVoiceSearchResult(null);
+    setVoiceSearchError(null);
+    setActiveTab("Products");
     setView("products");
   }
 
@@ -125,6 +172,8 @@ function App() {
       <RefineSearch
         category={activeCategory}
         voiceQuery={voiceQuery}
+        error={voiceSearchError}
+        isSubmitting={status === "loading"}
         onBack={() => setView("products")}
         onChangeCategory={() => {
           setActiveCategory(null);
@@ -136,16 +185,27 @@ function App() {
     );
   }
 
+  if (view === "voice-results" && voiceSearchResult) {
+    return (
+      <VoiceResults
+        transcript={voiceSearchResult.transcript}
+        initial={voiceSearchResult}
+        onBack={() => setView("products")}
+        onProductView={handleVoiceProductView}
+      />
+    );
+  }
+
   return (
-    <div className="flex min-h-screen flex-col bg-black text-white">
-      <div
-        className={`mx-auto flex w-full max-w-[700px] flex-1 flex-col ${cart.length > 0 ? "pb-20" : ""}`}
-      >
+    <div className="min-h-screen bg-black text-white">
+      <div className="mx-auto max-w-md pb-28">
         <Header
           onCameraClick={() => fileInputRef.current?.click()}
           onVoiceResult={handleQuery}
           onNewUser={handleNewUser}
         />
+
+        <SearchBar onSearch={handleQuery} />
 
         <CategoryGrid
           activeCategory={activeCategory}
@@ -153,6 +213,8 @@ function App() {
         />
 
         <UploadedImages images={uploadedImages} />
+
+        <TopSellersBanner />
 
         <input
           ref={fileInputRef}
@@ -201,6 +263,7 @@ function App() {
       </div>
 
       <CartBar items={cart} onPlaceOrder={handlePlaceOrder} />
+      <BottomNav active={activeTab} onSelect={setActiveTab} />
     </div>
   );
 }

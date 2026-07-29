@@ -1,8 +1,11 @@
 # Image Search Backend (Jewelry Shopping App)
 
 FastAPI backend that lets a user upload a photo and find visually similar
-products in the catalog, using CLIP image embeddings + pgvector similarity
-search in Supabase (Postgres).
+products in the catalog (CLIP embeddings + pgvector similarity search),
+search by voice (transcript → LLM filter extraction → structured product
+query — transcription itself happens client-side in the browser, not here),
+and log kiosk analytics events — all against Supabase (Postgres). See
+`ANALYTICS.md` for the analytics event catalog and example queries.
 
 ## Project structure
 
@@ -15,10 +18,14 @@ app/
   routers/
     uploads.py            POST /uploads/presign
     image_search.py        POST /image-search
+    voice_search.py         POST /voice-search, GET /search-history
+    events.py               POST /events (kiosk analytics, see ANALYTICS.md)
   services/
     supabase.py            Supabase client (service role key)
     s3.py                   boto3 S3 client, presign + public URL helpers
     embeddings.py           get_image_embedding() — the swappable embedding backend
+    extract_filters.py      extract_search_filters() — the swappable filter-extraction backend
+    filter_constants.py     shared category/price-band/age-group/usage vocabularies
 migrations/               SQL files to run in the Supabase SQL editor, in order
 scripts/
   index_catalog.py         Batch job: embed the whole catalog (safe to re-run)
@@ -33,6 +40,9 @@ scripts/
    - `EMBEDDING_MODEL_NAME` — defaults to `openai/clip-vit-base-patch32`
    - `PRESIGN_EXPIRY_SECONDS` — how long a presigned upload URL stays valid (default 300s)
    - `PRODUCT_API_URL` — your teammate's product-image API (see `scripts/index_catalog.py`)
+   - `OPENAI_API_KEY` — used by `app/services/extract_filters.py` (structured
+     filter extraction from a transcript). Voice transcription itself happens
+     client-side (browser Web Speech API), not in this backend.
 
 2. **Install dependencies:**
    ```bash
@@ -52,6 +62,11 @@ scripts/
    - `005_row_level_security.sql`
    - `006_match_products_function.sql`
    - `007_add_source_product_id.sql`
+   - `008_add_price_range.sql`
+   - `009_add_voice_search.sql`
+   - `010_fix_match_products_category_filter.sql`
+   - `011_create_kiosk_events_table.sql`
+   - `012_kiosk_events_indexes_and_rls.sql`
 
    These aren't wired into a migration runner (e.g. Alembic/Supabase CLI
    migrations) — paste each file's contents into the SQL editor and run it.
@@ -127,6 +142,52 @@ editor so the ivfflat index's query planner stats are accurate.
    cosine-similarity search against `products.embedding` via the
    `match_products` Postgres RPC function, inserts a row into
    `uploaded_images` recording the match, and returns the top 20 matches.
+   `category` is matched via case-insensitive regex (`CATEGORY_PATTERNS`),
+   not exact equality — real category data is messy free text ("Bali
+   Earrings", "Catelog studs") that's never literally equal to a clean label
+   like `"Earrings"`; see migration 010's comments for why this was a real
+   bug that needed fixing, not just a style choice.
+
+## Voice search flow (end to end)
+
+Voice transcription happens **client-side**, not in this backend — the
+frontend uses the browser's native Web Speech API to turn speech into text
+directly, with no audio ever uploaded anywhere. This backend only receives
+the resulting transcript text.
+
+1. Client calls `POST /voice-search` with `{ transcript, user_id }`.
+2. Backend extracts structured filters from the transcript via
+   `extract_filters.extract_search_filters()` — an LLM call constrained to a
+   strict JSON schema, returning `{category, price_band, age_group, usage}`,
+   each `null` if not mentioned. Fixed vocabularies for all four live in
+   `app/services/filter_constants.py`.
+3. Backend queries `products`, applying only the non-null extracted filters:
+   - `category` — matched against the real `products.category` text via a
+     best-effort regex (`CATEGORY_PATTERNS`), since the actual catalog data
+     is inconsistent free text (e.g. "Bali Earrings", "Catelog studs") that
+     never exactly equals a clean value like `"earrings"`. Same technique now
+     also used by `/image-search`'s category filter (migration 010).
+     Categories with no type signal in their name (e.g. "Diamond", "Solitaire
+     Collection") won't match any of the 6 buckets and are excluded — a real
+     limit of the underlying category data, not a bug.
+   - `price_band` — mapped to a numeric `(min, max)` via `PRICE_BAND_RANGES`
+     and applied against the raw `price` column, **not** the `price_range`
+     generated column added in migration 008 — the two use different label
+     spellings for the same underlying numeric ranges (voice search uses
+     `snake_case` like `25k_50k`, matching the extraction schema; the
+     frontend's Price Band filter uses `25K-50K`). Keeping them as numeric
+     ranges avoids needing the two label vocabularies to match.
+   - `age_group` / `usage` — exact match against `products.age_group` /
+     `products.usage`. **These columns exist but are currently unpopulated
+     for every product** (see migration 009's comments — no source data was
+     available to derive them from, same conclusion reached for image
+     search). A voice search that extracts either filter will currently
+     return zero matches until something populates these columns.
+4. Backend inserts a row into `search_history` (transcript + extracted
+   filters), and returns `{search_history_id, transcript, extracted_filters, matches}`.
+
+`GET /search-history?user_id=...` returns that user's past searches, most
+recent first — for a future "search history" screen.
 
 ## Swapping the embedding backend later
 
@@ -145,16 +206,65 @@ To swap CLIP-running-locally for a hosted API (e.g. Replicate):
 No changes are needed in `routers/image_search.py` or `scripts/index_catalog.py`
 — they only depend on the function signature, not the implementation.
 
+## Swapping the filter-extraction backend later
+
+`app.services.extract_filters.extract_search_filters(transcript: str) -> dict`
+currently calls OpenAI with structured outputs (strict JSON schema). To swap
+in Claude (Anthropic's tool-use API) or another model, rewrite the body
+only — keep the same fixed vocabularies from `filter_constants.py` in
+whatever schema/tool definition the new provider needs. `routers/voice_search.py`
+only depends on the function signature, not the implementation, so this
+doesn't touch the router.
+
+(There used to be a `stt.py` module here for server-side Whisper
+transcription, built when `/voice-search` accepted raw audio uploads. It was
+removed once the actual frontend turned out to do transcription client-side
+via the browser's Web Speech API and send this backend a transcript
+directly — see git history if server-side transcription is ever needed
+again, e.g. for a client that can't do it locally.)
+
 ## Notes for teammates integrating this later
 
 - The product-image API is treated as an external dependency
   (`PRODUCT_API_URL` + `fetch_products_from_teammate_api()`); nothing here
   assumes how it's implemented.
-- Row Level Security policies in `005_row_level_security.sql` assume
-  `uploaded_images.user_id` corresponds to Supabase Auth's `auth.uid()` for
-  any *direct* client access to Supabase — this backend itself uses the
-  service role key and bypasses RLS. Adjust if your auth model differs.
+- Row Level Security policies in `005_row_level_security.sql` (and
+  `009_add_voice_search.sql` for `search_history`) assume `user_id` columns
+  correspond to Supabase Auth's `auth.uid()` for any *direct* client access
+  to Supabase — this backend itself uses the service role key and bypasses
+  RLS. Adjust if your auth model differs. `kiosk_events` is different: it has
+  no `user_id`/`auth.uid()` concept (anonymous shared-kiosk sessions), so RLS
+  is enabled with zero policies attached, denying direct client access
+  entirely — everything goes through `POST /events`.
 - All request/response shapes are Pydantic models in `app/models/schemas.py`,
   so this can be merged into a larger FastAPI app by mounting
   `app.routers.uploads.router` / `app.routers.image_search.router` on an
   existing app instance instead of using `app/main.py` directly.
+- **Migration numbering note:** `ANALYTICS.md` originally referenced
+  `migrations/008_create_kiosk_events_table.sql` and
+  `009_kiosk_events_indexes_and_rls.sql`, but this project's real `008`/`009`
+  were already built and run against live Supabase for other features
+  (price bands, voice search) before that doc was written. The kiosk_events
+  migrations were implemented as `011`/`012` instead — if you're
+  cross-referencing `ANALYTICS.md` against the actual `migrations/` folder,
+  that's why the numbers don't match what the doc originally said.
+
+## Deployment (Render)
+
+`render.yaml` at the repo root is a Render Blueprint — `New -> Blueprint` in
+the Render dashboard, connect this repo, it reads the file automatically.
+Set `rootDir: backend` (already in the file) since this is a monorepo.
+
+Notes specific to this project:
+- **Plan size:** `torch`/`transformers` (CLIP) need more RAM than Render's
+  free 512MB tier reliably provides — the blueprint defaults to `standard`.
+- **Env vars:** everything in `.env.example` must be set in the Render
+  dashboard (marked `sync: false` in `render.yaml` so they're never
+  committed). Include `ALLOWED_ORIGINS` with your deployed frontend's exact
+  URL once you know it (see `app/main.py`'s CORS middleware).
+- **Cold start / model cache:** the CLIP model downloads from HuggingFace on
+  first use (lazy-loaded, see `embeddings.py`) and isn't cached across
+  deploys on Render's default ephemeral disk — the first embedding request
+  after each deploy will be slower while it re-downloads.
+- **Health check:** `/health` is already wired up; Render uses
+  `healthCheckPath` from the blueprint for zero-downtime deploys.

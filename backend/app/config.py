@@ -26,6 +26,21 @@ class Settings(BaseSettings):
     product_api_url: str = ""
     product_api_key: str = ""
 
+    # Voice search: filter extraction from a transcript (extract_filters.py).
+    # Transcription itself happens client-side (browser Web Speech API), not here.
+    openai_api_key: str = ""
+
+    # CORS: comma-separated list of allowed frontend origins (e.g.
+    # "https://reeya-kioski.vercel.app,http://localhost:5173"). Only matters
+    # once frontend and backend are on different origins (i.e. deployed) —
+    # the local Vite dev proxy makes requests same-origin, so this isn't
+    # needed for local dev.
+    allowed_origins: str = "http://localhost:5173"
+
+    @property
+    def allowed_origins_list(self) -> list[str]:
+        return [origin.strip() for origin in self.allowed_origins.split(",") if origin.strip()]
+
 
 @lru_cache
 def get_settings() -> Settings:

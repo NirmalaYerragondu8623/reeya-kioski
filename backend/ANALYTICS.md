@@ -1,12 +1,15 @@
 # Kiosk analytics — schema & API contract
 
 For the backend developer picking this up: this is the storage format and
-API contract the frontend already sends events in. The endpoint code
-(`app/routers/events.py`) and migrations (`migrations/008_...sql`,
-`migrations/009_...sql`) are already written as a starting point — review,
-adjust, and deploy as needed. **Not yet tested against a live Supabase
-instance** (no credentials available while building this) — verify the
-insert works before relying on it.
+API contract the frontend already sends events in.
+
+**Status:** implemented — `app/routers/events.py` exists and is wired into
+`app/main.py`. **Migration numbering differs from what's shown below**: this
+project's real `008`/`009` were already built and run against live Supabase
+for other features (price bands, voice search) before this doc was written,
+so the kiosk_events migrations were implemented as `011`/`012` instead of
+`008`/`009`. See `migrations/011_create_kiosk_events_table.sql` and
+`migrations/012_kiosk_events_indexes_and_rls.sql` for the actual files.
 
 ## Storage: one table, append-only
 
@@ -21,8 +24,8 @@ create table kiosk_events (
 );
 ```
 
-Full DDL with indexes and RLS: `migrations/008_create_kiosk_events_table.sql`
-and `migrations/009_kiosk_events_indexes_and_rls.sql`.
+Full DDL with indexes and RLS: `migrations/011_create_kiosk_events_table.sql`
+and `migrations/012_kiosk_events_indexes_and_rls.sql`.
 
 One row per interaction. `event_name` is a free-form string (not a DB enum)
 so the frontend can add new event types without a migration. `payload` holds
