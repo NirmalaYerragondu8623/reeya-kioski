@@ -8,7 +8,7 @@ import {
   PRICE_BAND_VALUES,
   USAGE_OPTIONS,
   USAGE_VALUES,
-  labelToValue,
+  labelsToValues,
 } from "../lib/preferenceOptions";
 import { startVoiceSearch } from "../lib/voiceSearch";
 import {
@@ -17,15 +17,14 @@ import {
   ChevronDownIcon,
   DiamondIcon,
   HeartIcon,
-  MicIcon,
   PriceTagIcon,
   RefreshIcon,
 } from "./icons";
 
 export interface Preferences {
-  ageGroup: string | null;
-  priceBand: string | null;
-  usage: string | null;
+  ageGroup: string[];
+  priceBand: string[];
+  usage: string[];
 }
 
 interface RefineSearchProps {
@@ -42,21 +41,21 @@ interface RefineSearchProps {
 export function PillGroup({
   options,
   value,
-  onChange,
+  onToggle,
 }: {
   options: string[];
-  value: string | null;
-  onChange: (value: string | null) => void;
+  value: string[];
+  onToggle: (option: string) => void;
 }) {
   return (
     <div className="flex flex-wrap gap-2">
       {options.map((option) => {
-        const isSelected = value === option;
+        const isSelected = value.includes(option);
         return (
           <button
             key={option}
             type="button"
-            onClick={() => onChange(isSelected ? null : option)}
+            onClick={() => onToggle(option)}
             className={`rounded-full border px-4 py-2 text-xs font-medium whitespace-nowrap transition-colors ${
               isSelected
                 ? "border-gold bg-gold text-black"
@@ -71,13 +70,17 @@ export function PillGroup({
   );
 }
 
+function toggleValue(list: string[], option: string): string[] {
+  return list.includes(option) ? list.filter((v) => v !== option) : [...list, option];
+}
+
 interface FilterConfig {
   key: string;
   Icon: ComponentType<SVGProps<SVGSVGElement>>;
   title: string;
   options: string[];
-  value: string | null;
-  onChange: (value: string | null) => void;
+  value: string[];
+  onToggle: (option: string) => void;
 }
 
 export function RefineSearch({
@@ -90,9 +93,9 @@ export function RefineSearch({
   wishlistIds,
   onNewUser,
 }: RefineSearchProps) {
-  const [ageGroup, setAgeGroup] = useState<string | null>(null);
-  const [priceBand, setPriceBand] = useState<string | null>(null);
-  const [usage, setUsage] = useState<string | null>(null);
+  const [ageGroup, setAgeGroup] = useState<string[]>([]);
+  const [priceBand, setPriceBand] = useState<string[]>([]);
+  const [usage, setUsage] = useState<string[]>([]);
   const [isListening, setIsListening] = useState(false);
   const [openFilterKey, setOpenFilterKey] = useState<string | null>(null);
   const stopVoiceRef = useRef<(() => void) | null>(null);
@@ -102,6 +105,12 @@ export function RefineSearch({
   const [fetchError, setFetchError] = useState<string | null>(null);
 
   useEffect(() => {
+    // A filter dropdown is still open — the user may still be picking more
+    // than one option, so don't fire a request per individual tap. Only the
+    // dropdown closing (openFilterKey back to null) commits the selection
+    // and triggers the fetch below.
+    if (openFilterKey !== null) return;
+
     let cancelled = false;
 
     async function run() {
@@ -110,9 +119,9 @@ export function RefineSearch({
       try {
         const response = await voiceSearch(voiceQuery ?? "", {
           category: category ?? undefined,
-          age_group: labelToValue(AGE_GROUP_OPTIONS, AGE_GROUP_VALUES, ageGroup),
-          price_band: labelToValue(PRICE_BAND_OPTIONS, PRICE_BAND_VALUES, priceBand),
-          usage: labelToValue(USAGE_OPTIONS, USAGE_VALUES, usage),
+          age_group: labelsToValues(AGE_GROUP_OPTIONS, AGE_GROUP_VALUES, ageGroup),
+          price_band: labelsToValues(PRICE_BAND_OPTIONS, PRICE_BAND_VALUES, priceBand),
+          usage: labelsToValues(USAGE_OPTIONS, USAGE_VALUES, usage),
         });
         if (!cancelled) setResult(response);
       } catch (err) {
@@ -130,7 +139,7 @@ export function RefineSearch({
     return () => {
       cancelled = true;
     };
-  }, [category, voiceQuery, ageGroup, priceBand, usage]);
+  }, [category, voiceQuery, ageGroup, priceBand, usage, openFilterKey]);
 
   const filters: FilterConfig[] = [
     {
@@ -139,7 +148,7 @@ export function RefineSearch({
       title: "Age Group",
       options: AGE_GROUP_OPTIONS,
       value: ageGroup,
-      onChange: setAgeGroup,
+      onToggle: (option) => setAgeGroup((prev) => toggleValue(prev, option)),
     },
     {
       key: "priceBand",
@@ -147,7 +156,7 @@ export function RefineSearch({
       title: "Price Band",
       options: PRICE_BAND_OPTIONS,
       value: priceBand,
-      onChange: setPriceBand,
+      onToggle: (option) => setPriceBand((prev) => toggleValue(prev, option)),
     },
     {
       key: "usage",
@@ -155,7 +164,7 @@ export function RefineSearch({
       title: "Usage",
       options: USAGE_OPTIONS,
       value: usage,
-      onChange: setUsage,
+      onToggle: (option) => setUsage((prev) => toggleValue(prev, option)),
     },
   ];
 
@@ -207,9 +216,6 @@ export function RefineSearch({
           <section className="mx-5 mt-4 rounded-2xl border border-white/10 p-4">
             <p className="text-xs text-neutral-500">Searched via voice / text</p>
             <div className="mt-2 flex items-center gap-3 rounded-xl border border-white/10 p-3">
-              <span className="flex size-9 shrink-0 items-center justify-center rounded-full border border-gold/50 text-gold">
-                <MicIcon className="size-4" />
-              </span>
               <p className="flex-1 text-sm text-neutral-200 italic">
                 {voiceQuery ? `"${voiceQuery}"` : "Listening..."}
               </p>
@@ -240,12 +246,16 @@ export function RefineSearch({
                   type="button"
                   onClick={() => setOpenFilterKey(isOpen ? null : filter.key)}
                   className={`flex w-full items-center justify-center gap-1.5 rounded-xl border px-2 py-2.5 text-center ${
-                    isOpen || filter.value ? "border-white/40" : "border-white/10"
+                    isOpen || filter.value.length > 0 ? "border-white/40" : "border-white/10"
                   }`}
                 >
                   <filter.Icon className="size-5 shrink-0 text-gold" />
                   <span className="truncate text-[11px] font-semibold text-white">
-                    {filter.value ?? filter.title}
+                    {filter.value.length === 0
+                      ? filter.title
+                      : filter.value.length === 1
+                        ? filter.value[0]
+                        : `${filter.title} (${filter.value.length})`}
                   </span>
                   <ChevronDownIcon
                     className={`size-3.5 shrink-0 text-gold transition-transform ${
@@ -259,12 +269,13 @@ export function RefineSearch({
                     <PillGroup
                       options={filter.options}
                       value={filter.value}
-                      onChange={(value) => {
-                        filter.onChange(value);
-                        setOpenFilterKey(null);
+                      onToggle={(option) => {
+                        const willBeSelected = !filter.value.includes(option);
+                        filter.onToggle(option);
                         trackEvent("filter_applied", {
                           filter_type: filter.key,
-                          value,
+                          value: option,
+                          selected: willBeSelected,
                           category,
                         });
                       }}

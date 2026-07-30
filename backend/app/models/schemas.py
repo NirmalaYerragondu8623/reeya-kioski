@@ -55,18 +55,20 @@ class VoiceSearchRequest(BaseModel):
     # Explicit filter selections (e.g. from the Refine Search preference
     # pills) — when set, these take precedence over whatever
     # extract_search_filters() infers from the transcript, so a user's
-    # manual choice always wins over the LLM's guess.
+    # manual choice always wins over the LLM's guess. Each is a list since
+    # Refine Search lets a customer pick more than one option per filter
+    # (e.g. both "Daily Wear" and "Festive").
     category: str | None = None
-    price_band: str | None = None
-    age_group: str | None = None
-    usage: str | None = None
+    price_band: list[str] | None = None
+    age_group: list[str] | None = None
+    usage: list[str] | None = None
 
 
 class ExtractedFilters(BaseModel):
     category: str | None = None
-    price_band: str | None = None
-    age_group: str | None = None
-    usage: str | None = None
+    price_band: list[str] | None = None
+    age_group: list[str] | None = None
+    usage: list[str] | None = None
 
 
 class VoiceMatch(BaseModel):

@@ -109,9 +109,9 @@ export interface VoiceMatch {
 
 export interface ExtractedFilters {
   category: string | null;
-  price_band: string | null;
-  age_group: string | null;
-  usage: string | null;
+  price_band: string[] | null;
+  age_group: string[] | null;
+  usage: string[] | null;
 }
 
 export interface VoiceSearchResponse {
@@ -123,9 +123,9 @@ export interface VoiceSearchResponse {
 
 export interface VoiceSearchOverrides {
   category?: string;
-  price_band?: string;
-  age_group?: string;
-  usage?: string;
+  price_band?: string[];
+  age_group?: string[];
+  usage?: string[];
 }
 
 // Caches by (transcript + filters) for the current customer's session —
@@ -173,11 +173,20 @@ export function voiceSearch(
   transcript: string,
   overrides: VoiceSearchOverrides = {},
 ): Promise<VoiceSearchResponse> {
-  const cacheKey = JSON.stringify({ transcript, ...overrides });
+  // Sort multi-select arrays so picking the same filters in a different
+  // order still hits the cache instead of firing a redundant request.
+  const normalized: VoiceSearchOverrides = {
+    ...overrides,
+    price_band: overrides.price_band ? [...overrides.price_band].sort() : undefined,
+    age_group: overrides.age_group ? [...overrides.age_group].sort() : undefined,
+    usage: overrides.usage ? [...overrides.usage].sort() : undefined,
+  };
+
+  const cacheKey = JSON.stringify({ transcript, ...normalized });
   const cached = voiceSearchCache.get(cacheKey);
   if (cached) return cached;
 
-  const promise = fetchVoiceSearch(transcript, overrides);
+  const promise = fetchVoiceSearch(transcript, normalized);
   voiceSearchCache.set(cacheKey, promise);
   // Don't cache failures — a transient network error shouldn't permanently
   // block retrying the same search later in the session.
