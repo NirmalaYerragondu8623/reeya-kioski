@@ -6,10 +6,10 @@
 // API key the frontend must never hold.
 export const CATEGORY_IMAGES: Record<string, string> = {
   Earrings: "/earrings_thumbnail.webp",
-  Pendants: "/pendant_thumbnail.webp",
+  Pendants: "/pendant_thumbnail.png",
   Necklace: "/necklace_thumbnail.webp",
   Rings: "/rings_thumbnail.webp",
-  Bangles: "/bangle_thumbnail.webp",
+  Bangles: "/bangle_thumbnail.png",
   Bracelets:
     "https://reeyalifestyle.com/wp-content/uploads/2025/11/WhatsApp-Image-2025-11-13-at-14.58.15.jpeg",
 };
