@@ -1,4 +1,4 @@
-import type { ProductMatch } from "./api";
+import type { WishlistItem } from "./api";
 
 /**
  * ProductMatch has no price field — the current /image-search response
@@ -14,6 +14,6 @@ export function mockPriceFor(productId: string): number {
   return 5000 + (hash % 90000);
 }
 
-export function cartTotal(items: ProductMatch[]): number {
+export function cartTotal(items: WishlistItem[]): number {
   return items.reduce((sum, item) => sum + mockPriceFor(item.id), 0);
 }

@@ -1,19 +1,24 @@
 import { useRef, useState } from "react";
+import { trackEvent } from "../lib/analytics";
 import { isVoiceSearchSupported, startVoiceSearch } from "../lib/voiceSearch";
-import { CameraIcon, MicIcon, SearchIcon } from "./icons";
+import { CameraChoicePopup } from "./CameraChoicePopup";
+import { CameraIcon, MicIcon, RefreshIcon, SearchIcon } from "./icons";
 import { SearchPopup } from "./SearchPopup";
 import { VoicePopup } from "./VoicePopup";
 
 interface HeaderProps {
   onCameraClick?: () => void;
-  onVoiceResult?: (transcript: string) => void;
+  onUploadClick?: () => void;
+  onVoiceResult?: (query: string, source: "voice" | "text") => void;
+  onNewUser?: () => void;
 }
 
-export function Header({ onCameraClick, onVoiceResult }: HeaderProps) {
+export function Header({ onCameraClick, onUploadClick, onVoiceResult, onNewUser }: HeaderProps) {
   const [isListening, setIsListening] = useState(false);
   const [transcript, setTranscript] = useState("");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [isCameraChoiceOpen, setIsCameraChoiceOpen] = useState(false);
   const stopRef = useRef<(() => void) | null>(null);
 
   const isPopupOpen = isListening || transcript.length > 0 || errorMessage !== null;
@@ -30,6 +35,7 @@ export function Header({ onCameraClick, onVoiceResult }: HeaderProps) {
 
     setTranscript("");
     setErrorMessage(null);
+    trackEvent("voice_search_started", {});
 
     if (!isVoiceSearchSupported()) {
       setErrorMessage("Voice search isn't supported in this browser.");
@@ -47,6 +53,27 @@ export function Header({ onCameraClick, onVoiceResult }: HeaderProps) {
     );
   }
 
+  function handleCameraIconClick() {
+    setIsCameraChoiceOpen(true);
+  }
+
+  function handleChooseCamera() {
+    setIsCameraChoiceOpen(false);
+    trackEvent("image_search_started", { source: "camera" });
+    onCameraClick?.();
+  }
+
+  function handleChooseUpload() {
+    setIsCameraChoiceOpen(false);
+    trackEvent("image_search_started", { source: "upload" });
+    onUploadClick?.();
+  }
+
+  function handleTextSearchClick() {
+    trackEvent("text_search_opened", {});
+    setIsSearchOpen(true);
+  }
+
   function handleStop() {
     stopRef.current?.();
   }
@@ -58,13 +85,13 @@ export function Header({ onCameraClick, onVoiceResult }: HeaderProps) {
 
   function handleConfirm() {
     stopRef.current?.();
-    onVoiceResult?.(transcript);
+    onVoiceResult?.(transcript, "voice");
     resetVoiceState();
   }
 
   function handleSearchSubmit(query: string) {
     setIsSearchOpen(false);
-    onVoiceResult?.(query);
+    onVoiceResult?.(query, "text");
   }
 
   return (
@@ -75,7 +102,7 @@ export function Header({ onCameraClick, onVoiceResult }: HeaderProps) {
         className="mx-auto h-32 w-auto object-contain"
       />
 
-      <div className="-mt-2 flex justify-end">
+      <div className="-mt-2 flex items-center justify-between gap-2">
         <div className="flex shrink-0 items-center gap-2 rounded-full border border-gold/50 py-1.5 pr-3 pl-2.5">
           <button
             type="button"
@@ -90,7 +117,7 @@ export function Header({ onCameraClick, onVoiceResult }: HeaderProps) {
           </button>
           <button
             type="button"
-            onClick={onCameraClick}
+            onClick={handleCameraIconClick}
             aria-label="Search by photo"
             className="shrink-0 rounded-full p-0.5 text-gold"
           >
@@ -98,13 +125,22 @@ export function Header({ onCameraClick, onVoiceResult }: HeaderProps) {
           </button>
           <button
             type="button"
-            onClick={() => setIsSearchOpen(true)}
+            onClick={handleTextSearchClick}
             aria-label="Search by typing"
             className="shrink-0 rounded-full p-0.5 text-gold"
           >
             <SearchIcon className="size-7" />
           </button>
         </div>
+
+        <button
+          type="button"
+          onClick={onNewUser}
+          className="flex shrink-0 items-center gap-2 rounded-full border border-gold/40 px-4 py-1.5 text-sm font-medium text-gold/80"
+        >
+          <RefreshIcon className="size-5" />
+          New User
+        </button>
       </div>
 
       {isPopupOpen && (
@@ -122,6 +158,14 @@ export function Header({ onCameraClick, onVoiceResult }: HeaderProps) {
         <SearchPopup
           onCancel={() => setIsSearchOpen(false)}
           onSubmit={handleSearchSubmit}
+        />
+      )}
+
+      {isCameraChoiceOpen && (
+        <CameraChoicePopup
+          onCancel={() => setIsCameraChoiceOpen(false)}
+          onChooseCamera={handleChooseCamera}
+          onChooseUpload={handleChooseUpload}
         />
       )}
     </header>

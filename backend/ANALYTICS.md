@@ -69,9 +69,15 @@ next reset. `session_started` / `session_ended` bound each session.
 | `session_started` | `{}` | New User tapped, or first load |
 | `session_ended` | `{}` | Right before a new session starts (previous customer's session closing), or the kiosk tab closes |
 | `category_viewed` | `{ category_name }` | A category tile is tapped |
+| `voice_search_started` | `{}` | The mic icon is tapped |
+| `image_search_started` | `{}` | The camera icon is tapped |
+| `text_search_opened` | `{}` | The search (typing) icon is tapped |
+| `search_performed` | `{ query, source }` | A voice or typed search is actually submitted — `source` is `"voice"` or `"text"` |
+| `filter_applied` | `{ filter_type, value, category }` | An Age Group / Price Band / Usage filter is selected on the Refine Search screen |
 | `product_viewed` | `{ product_id, product_name, category_name }` | A search-result product card is tapped |
-| `product_added_to_cart` | `{ product_id, product_name }` | "Add to Cart" tapped on a product |
-| `order_completed` | `{ total_amount, item_count }` | "Place Order" tapped with items in cart |
+| `product_added_to_cart` | `{ product_id, product_name }` | The wishlist heart is tapped on a product not yet wishlisted (cart and wishlist are the same list) |
+| `product_removed_from_wishlist` | `{ product_id, product_name }` | The wishlist heart is tapped on an already-wishlisted product, or its remove (X) button is tapped on the Wishlist screen |
+| `order_completed` | `{ total_amount, item_count }` | "Let's connect" tapped with items in cart |
 | `order_abandoned` | `{ item_count }` | New User tapped while cart still has items (customer walked away) |
 
 ## Example queries for the analytics questions

@@ -13,6 +13,16 @@ export interface ProductMatch {
   similarity: number;
 }
 
+// Common shape for anything that can go in the cart/wishlist — both
+// ProductMatch (image search) and VoiceMatch (voice/text search) satisfy
+// this structurally, so either can be passed where a WishlistItem is expected.
+export interface WishlistItem {
+  id: string;
+  name: string;
+  image_s3_url: string;
+  price?: number | null;
+}
+
 export interface ImageSearchResponse {
   uploaded_image_id: string;
   matches: ProductMatch[];
@@ -116,15 +126,24 @@ export interface VoiceSearchOverrides {
   usage?: string;
 }
 
-/**
- * Searches by transcript text (from voice or typed search), optionally with
- * explicit filter overrides (e.g. from the Refine Search preference pills)
- * that take precedence over whatever the backend's LLM extracts from the
- * transcript itself.
- */
-export async function voiceSearch(
+// Caches by (transcript + filters) for the current customer's session —
+// revisiting the same category or re-selecting a filter combo already seen
+// this session reuses the stored result instead of hitting the backend
+// again. Caches the in-flight promise itself (not just the resolved value)
+// so two components asking for the same query at once share one network
+// call. Cleared on "New User" (see clearVoiceSearchCache) so the next
+// customer's session pulls live data — picking up any price/catalog changes
+// since the kiosk was last reset — rather than serving stale results all day.
+const voiceSearchCache = new Map<string, Promise<VoiceSearchResponse>>();
+
+/** Call on "New User" so the next customer's session fetches fresh data. */
+export function clearVoiceSearchCache(): void {
+  voiceSearchCache.clear();
+}
+
+async function fetchVoiceSearch(
   transcript: string,
-  overrides: VoiceSearchOverrides = {},
+  overrides: VoiceSearchOverrides,
 ): Promise<VoiceSearchResponse> {
   const userId = getOrCreateUserId();
   const res = await fetch(`${API_BASE}/voice-search`, {
@@ -140,4 +159,26 @@ export async function voiceSearch(
     throw new Error(`Voice search failed: ${res.status} ${await res.text()}`);
   }
   return res.json();
+}
+
+/**
+ * Searches by transcript text (from voice or typed search), optionally with
+ * explicit filter overrides (e.g. from the Refine Search preference pills)
+ * that take precedence over whatever the backend's LLM extracts from the
+ * transcript itself.
+ */
+export function voiceSearch(
+  transcript: string,
+  overrides: VoiceSearchOverrides = {},
+): Promise<VoiceSearchResponse> {
+  const cacheKey = JSON.stringify({ transcript, ...overrides });
+  const cached = voiceSearchCache.get(cacheKey);
+  if (cached) return cached;
+
+  const promise = fetchVoiceSearch(transcript, overrides);
+  voiceSearchCache.set(cacheKey, promise);
+  // Don't cache failures — a transient network error shouldn't permanently
+  // block retrying the same search later in the session.
+  promise.catch(() => voiceSearchCache.delete(cacheKey));
+  return promise;
 }

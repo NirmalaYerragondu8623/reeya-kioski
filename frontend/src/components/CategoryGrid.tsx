@@ -74,7 +74,7 @@ function CategoryTile({
     <button
       type="button"
       onClick={() => onSelect?.(isActive ? "" : label)}
-      className="flex w-36 shrink-0 flex-col items-center gap-1.5"
+      className="flex w-44 shrink-0 flex-col items-center gap-1.5"
     >
       <div
         className={`aspect-square w-full overflow-hidden rounded-xl border-2 bg-neutral-950 transition-colors ${
@@ -95,9 +95,9 @@ export function CategoryGrid({ onSelect, activeCategory }: CategoryGridProps) {
   const bottomRow = CATEGORIES.slice(3, 6);
 
   return (
-    <div className="flex flex-col justify-center gap-6 px-4 py-3">
+    <div className="flex w-full flex-col justify-center gap-6 px-4 py-3">
       {[topRow, bottomRow].map((row, i) => (
-        <div key={i} className="flex justify-evenly">
+        <div key={i} className="flex w-full justify-evenly">
           {row.map(({ label, Icon }) => (
             <CategoryTile
               key={label}
