@@ -56,8 +56,26 @@ def image_search(
         },
     ).execute()
 
-    matches = [ProductMatch(**row) for row in result.data]
-    matched_product_ids = [str(match.id) for match in matches]
+    matched_product_ids = [str(row["id"]) for row in result.data]
+
+    # match_products (a stored SQL function) doesn't return price, so it's
+    # fetched here with a plain follow-up query instead of migrating that
+    # function — this is the same data, just one extra cheap lookup.
+    prices = (
+        supabase.table("products")
+        .select("id, price")
+        .in_("id", matched_product_ids)
+        .execute()
+        .data
+        if matched_product_ids
+        else []
+    )
+    price_by_id = {row["id"]: row["price"] for row in prices}
+
+    matches = [
+        ProductMatch(**row, price=price_by_id.get(str(row["id"])))
+        for row in result.data
+    ]
 
     inserted = (
         supabase.table("uploaded_images")

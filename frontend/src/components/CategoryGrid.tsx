@@ -83,7 +83,7 @@ function CategoryTile({
       >
         <CategoryThumbnail label={label} Icon={Icon} />
       </div>
-      <span className="shrink-0 font-category text-2xl tracking-[2px] text-gold">
+      <span className="shrink-0 font-category text-[25px] tracking-[2px] text-gold">
         {label}
       </span>
     </button>
@@ -95,7 +95,7 @@ export function CategoryGrid({ onSelect, activeCategory }: CategoryGridProps) {
   const bottomRow = CATEGORIES.slice(3, 6);
 
   return (
-    <div className="flex h-full w-full flex-1 flex-col justify-evenly gap-8 px-10 py-6">
+    <div className="flex h-full min-h-0 w-full flex-col justify-start gap-48 px-10 pt-[126px]">
       {[topRow, bottomRow].map((row, i) => (
         <div key={i} className="flex w-full gap-8">
           {row.map(({ label, Icon }) => (

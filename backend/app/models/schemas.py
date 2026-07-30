@@ -29,6 +29,7 @@ class ProductMatch(BaseModel):
     id: UUID
     name: str
     image_s3_url: str
+    price: float | None = None
     similarity: float = Field(ge=-1, le=1)
 
 

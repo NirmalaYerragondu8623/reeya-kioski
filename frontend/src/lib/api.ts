@@ -12,6 +12,7 @@ export interface ProductMatch {
   id: string;
   name: string;
   image_s3_url: string;
+  price: number | null;
   similarity: number;
 }
 

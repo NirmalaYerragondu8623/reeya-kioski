@@ -2,7 +2,7 @@ import { useRef, useState } from "react";
 import { trackEvent } from "../lib/analytics";
 import { isVoiceSearchSupported, startVoiceSearch } from "../lib/voiceSearch";
 import { CameraChoicePopup } from "./CameraChoicePopup";
-import { CameraIcon, MicIcon, RefreshIcon, SearchIcon } from "./icons";
+import { CameraIcon, MicIcon, PlusIcon, SearchIcon } from "./icons";
 import { SearchPopup } from "./SearchPopup";
 import { VoicePopup } from "./VoicePopup";
 
@@ -95,15 +95,17 @@ export function Header({ onCameraClick, onUploadClick, onVoiceResult, onNewUser 
   }
 
   return (
-    <header className="px-5 pt-2">
-      <img
-        src="/logo.png"
-        alt="Reeya Diamonds"
-        className="mx-auto h-32 w-auto object-contain"
-      />
+    <header className="flex flex-col gap-3 pt-4">
+      <div className="flex items-center justify-center px-5">
+        <img
+          src="/logo.png"
+          alt="Reeya Diamonds"
+          className="h-32 w-auto object-contain"
+        />
+      </div>
 
-      <div className="-mt-2 flex items-center justify-between gap-3">
-        <div className="flex shrink-0 items-center gap-4 rounded-full border border-gold/50 py-3 pr-5 pl-4">
+      <div className="flex items-center justify-between px-10">
+        <div className="ml-[5%] flex shrink-0 items-center gap-4 rounded-full border border-gold/50 py-3 pr-5 pl-4">
           <button
             type="button"
             onClick={handleMicClick}
@@ -136,10 +138,10 @@ export function Header({ onCameraClick, onUploadClick, onVoiceResult, onNewUser 
         <button
           type="button"
           onClick={onNewUser}
-          className="flex shrink-0 items-center gap-2 rounded-full border border-gold/40 px-6 py-3 text-lg font-medium text-gold/80"
+          aria-label="New user"
+          className="mr-[5%] flex size-16 shrink-0 items-center justify-center rounded-full border border-gold/40 text-gold/80"
         >
-          <RefreshIcon className="size-7" />
-          New User
+          <PlusIcon className="size-7" />
         </button>
       </div>
 
