@@ -13,6 +13,23 @@
 -- this migration only fixes the constraint so the *filter selection* no
 -- longer errors. app/routers/voice_search.py no longer hard-filters
 -- products on age_group/usage for that reason (see its own comments).
+--
+-- search_history has a handful of rows recorded under the old age-bracket
+-- vocabulary (e.g. '26_35') from before this switch — those values have no
+-- meaningful equivalent under teens/elegant/classic (bracket vs. style are
+-- different axes), so they're cleared to null rather than remapped, same as
+-- any other search where age_group wasn't specified. Do this before adding
+-- the new constraint, or the ADD CONSTRAINT below fails on those rows.
+
+update search_history
+    set age_group = null
+    where age_group is not null
+    and age_group not in ('teens', 'elegant', 'classic');
+
+update products
+    set age_group = null
+    where age_group is not null
+    and age_group not in ('teens', 'elegant', 'classic');
 
 alter table products drop constraint if exists products_age_group_check;
 alter table products add constraint products_age_group_check

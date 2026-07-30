@@ -200,6 +200,16 @@ create index if not exists kiosk_events_payload_gin_idx on kiosk_events using gi
 alter table kiosk_events enable row level security;
 
 -- ===== 013_update_age_group_vocabulary.sql =====
+update search_history
+    set age_group = null
+    where age_group is not null
+    and age_group not in ('teens', 'elegant', 'classic');
+
+update products
+    set age_group = null
+    where age_group is not null
+    and age_group not in ('teens', 'elegant', 'classic');
+
 alter table products drop constraint if exists products_age_group_check;
 alter table products add constraint products_age_group_check
     check (age_group in ('teens', 'elegant', 'classic'));
