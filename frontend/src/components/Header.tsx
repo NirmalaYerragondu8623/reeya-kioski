@@ -1,18 +1,19 @@
 import { useRef, useState } from "react";
 import { isVoiceSearchSupported, startVoiceSearch } from "../lib/voiceSearch";
-import { CameraIcon, DiamondIcon, MicIcon, RefreshIcon } from "./icons";
+import { CameraIcon, MicIcon, SearchIcon } from "./icons";
+import { SearchPopup } from "./SearchPopup";
 import { VoicePopup } from "./VoicePopup";
 
 interface HeaderProps {
   onCameraClick?: () => void;
   onVoiceResult?: (transcript: string) => void;
-  onNewUser?: () => void;
 }
 
-export function Header({ onCameraClick, onVoiceResult, onNewUser }: HeaderProps) {
+export function Header({ onCameraClick, onVoiceResult }: HeaderProps) {
   const [isListening, setIsListening] = useState(false);
   const [transcript, setTranscript] = useState("");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
   const stopRef = useRef<(() => void) | null>(null);
 
   const isPopupOpen = isListening || transcript.length > 0 || errorMessage !== null;
@@ -61,17 +62,21 @@ export function Header({ onCameraClick, onVoiceResult, onNewUser }: HeaderProps)
     resetVoiceState();
   }
 
-  return (
-    <header className="px-5 pt-6">
-      <h1
-        className="text-4xl text-gold uppercase"
-        style={{ fontFamily: "var(--font-serif-display)" }}
-      >
-        Reeya Diamonds
-      </h1>
+  function handleSearchSubmit(query: string) {
+    setIsSearchOpen(false);
+    onVoiceResult?.(query);
+  }
 
-      <div className="mt-4 flex items-center justify-between gap-3">
-        <div className="flex shrink-0 items-center gap-2 rounded-full border border-gold/50 py-1.5 pr-3 pl-2">
+  return (
+    <header className="px-5 pt-2">
+      <img
+        src="/logo.png"
+        alt="Reeya Diamonds"
+        className="mx-auto h-20 w-auto object-contain"
+      />
+
+      <div className="-mt-1 flex justify-end">
+        <div className="flex shrink-0 items-center gap-1 rounded-full border border-gold/50 py-1 pr-2 pl-1.5">
           <button
             type="button"
             onClick={handleMicClick}
@@ -81,7 +86,7 @@ export function Header({ onCameraClick, onVoiceResult, onNewUser }: HeaderProps)
               isListening ? "text-red-400" : "text-gold"
             }`}
           >
-            <MicIcon className={`size-5 ${isListening ? "animate-pulse" : ""}`} />
+            <MicIcon className={`size-4 ${isListening ? "animate-pulse" : ""}`} />
           </button>
           <button
             type="button"
@@ -89,29 +94,17 @@ export function Header({ onCameraClick, onVoiceResult, onNewUser }: HeaderProps)
             aria-label="Search by photo"
             className="shrink-0 rounded-full p-0.5 text-gold"
           >
-            <CameraIcon className="size-5" />
+            <CameraIcon className="size-4" />
           </button>
-          <span className="text-[11px] leading-tight text-neutral-200">
-            Search, speak
-            <br />
-            what you want
-          </span>
+          <button
+            type="button"
+            onClick={() => setIsSearchOpen(true)}
+            aria-label="Search by typing"
+            className="shrink-0 rounded-full p-0.5 text-gold"
+          >
+            <SearchIcon className="size-4" />
+          </button>
         </div>
-
-        <button
-          type="button"
-          onClick={onNewUser}
-          className="flex shrink-0 items-center gap-1.5 rounded-full border border-gold/40 px-3 py-1 text-[11px] font-medium text-gold/80"
-        >
-          <RefreshIcon className="size-3.5" />
-          New User
-        </button>
-      </div>
-
-      <div className="mt-5 flex items-center gap-3 text-gold/60">
-        <span className="h-px flex-1 bg-gold/30" />
-        <DiamondIcon className="size-2.5 fill-gold stroke-none" />
-        <span className="h-px flex-1 bg-gold/30" />
       </div>
 
       {isPopupOpen && (
@@ -122,6 +115,13 @@ export function Header({ onCameraClick, onVoiceResult, onNewUser }: HeaderProps)
           onStop={handleStop}
           onCancel={handleCancel}
           onConfirm={handleConfirm}
+        />
+      )}
+
+      {isSearchOpen && (
+        <SearchPopup
+          onCancel={() => setIsSearchOpen(false)}
+          onSubmit={handleSearchSubmit}
         />
       )}
     </header>

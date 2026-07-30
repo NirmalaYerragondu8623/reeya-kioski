@@ -29,7 +29,7 @@ export function ResultsGrid({ matches, onView, onAddToCart }: ResultsGridProps) 
             key={match.id}
             type="button"
             onClick={() => onView?.(match)}
-            className="relative overflow-hidden rounded-xl border border-gold/40 bg-neutral-950 text-left"
+            className="relative overflow-hidden rounded-xl border border-white/10 bg-neutral-950 text-left"
           >
             <img
               src={match.image_s3_url}

@@ -19,7 +19,7 @@ export function UploadedImages({ images }: UploadedImagesProps) {
         {images.map((image) => (
           <div
             key={image.id}
-            className="size-20 shrink-0 overflow-hidden rounded-xl border border-gold/30 bg-neutral-950"
+            className="size-20 shrink-0 overflow-hidden rounded-xl border border-white/10 bg-neutral-950"
           >
             <img
               src={image.url}

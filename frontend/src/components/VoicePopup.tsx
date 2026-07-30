@@ -128,7 +128,7 @@ export function VoicePopup({
                 type="button"
                 onClick={onConfirm}
                 disabled={!hasTranscript}
-                className="flex-1 rounded-full bg-gradient-to-r from-[#b8860b] via-[#f5d78e] to-[#b8860b] px-4 py-2.5 text-sm font-bold text-black disabled:opacity-40"
+                className="flex-1 rounded-full bg-white px-4 py-2.5 text-sm font-bold text-black disabled:opacity-40"
               >
                 Search
               </button>
