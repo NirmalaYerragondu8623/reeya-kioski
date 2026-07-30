@@ -191,3 +191,28 @@ create index kiosk_events_occurred_at_idx on kiosk_events (occurred_at);
 create index kiosk_events_payload_gin_idx on kiosk_events using gin (payload);
 
 alter table kiosk_events enable row level security;
+
+-- ============================================================
+-- Table: leads
+-- One row per unique phone number submitted via the "Let's connect" popup,
+-- written by POST /leads. NOT append-only like kiosk_events — a repeat
+-- submission with the same (normalized) phone updates this row instead of
+-- creating a duplicate. `session_ids` accumulates every kiosk session_id
+-- this phone has submitted under, so that customer's full kiosk_events
+-- history across all their visits can be pulled via a join on session_id.
+-- See migrations/015_create_leads_table.sql for the full rationale.
+-- ============================================================
+create table leads (
+    id            uuid primary key default gen_random_uuid(),
+    phone         text not null unique,   -- normalized: digits only, country code/trunk prefix stripped
+    name          text not null,
+    session_ids   uuid[] not null default '{}',
+    item_count    int,
+    total_amount  numeric,
+    created_at    timestamptz not null default now(),
+    updated_at    timestamptz not null default now()
+);
+
+create index leads_phone_idx on leads (phone);
+
+alter table leads enable row level security;
