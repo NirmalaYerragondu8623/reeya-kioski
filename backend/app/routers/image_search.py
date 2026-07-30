@@ -27,7 +27,15 @@ def image_search(
     except requests.RequestException as exc:
         raise HTTPException(status_code=400, detail=f"Could not download image from s3_url: {exc}") from exc
 
-    embedding = get_image_embedding(image_bytes)
+    try:
+        embedding = get_image_embedding(image_bytes)
+    except Exception as exc:
+        # An unhandled exception here would otherwise escape past FastAPI's
+        # CORSMiddleware (only HTTPException responses get CORS headers
+        # attached), so the browser sees a bare, origin-less 500 and reports
+        # it as a generic "Failed to fetch" instead of a real error.
+        logger.exception("Embedding generation failed for s3_url=%s", payload.s3_url)
+        raise HTTPException(status_code=502, detail=f"Embedding generation failed: {exc}") from exc
 
     # match_products does a regex match, not exact equality (see migration
     # 010) — translate a known category label (e.g. "Earrings") to its
