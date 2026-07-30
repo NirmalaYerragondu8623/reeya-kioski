@@ -72,11 +72,11 @@ export function Header({ onCameraClick, onVoiceResult }: HeaderProps) {
       <img
         src="/logo.png"
         alt="Reeya Diamonds"
-        className="mx-auto h-20 w-auto object-contain"
+        className="mx-auto h-32 w-auto object-contain"
       />
 
-      <div className="-mt-1 flex justify-end">
-        <div className="flex shrink-0 items-center gap-1 rounded-full border border-gold/50 py-1 pr-2 pl-1.5">
+      <div className="-mt-2 flex justify-end">
+        <div className="flex shrink-0 items-center gap-2 rounded-full border border-gold/50 py-1.5 pr-3 pl-2.5">
           <button
             type="button"
             onClick={handleMicClick}
@@ -86,7 +86,7 @@ export function Header({ onCameraClick, onVoiceResult }: HeaderProps) {
               isListening ? "text-red-400" : "text-gold"
             }`}
           >
-            <MicIcon className={`size-4 ${isListening ? "animate-pulse" : ""}`} />
+            <MicIcon className={`size-7 ${isListening ? "animate-pulse" : ""}`} />
           </button>
           <button
             type="button"
@@ -94,7 +94,7 @@ export function Header({ onCameraClick, onVoiceResult }: HeaderProps) {
             aria-label="Search by photo"
             className="shrink-0 rounded-full p-0.5 text-gold"
           >
-            <CameraIcon className="size-4" />
+            <CameraIcon className="size-7" />
           </button>
           <button
             type="button"
@@ -102,7 +102,7 @@ export function Header({ onCameraClick, onVoiceResult }: HeaderProps) {
             aria-label="Search by typing"
             className="shrink-0 rounded-full p-0.5 text-gold"
           >
-            <SearchIcon className="size-4" />
+            <SearchIcon className="size-7" />
           </button>
         </div>
       </div>
