@@ -94,7 +94,7 @@ function App() {
     setCart((prev) => {
       const alreadyWishlisted = prev.some((item) => item.id === product.id);
       trackEvent(
-        alreadyWishlisted ? "product_removed_from_wishlist" : "product_added_to_cart",
+        alreadyWishlisted ? "product_removed_from_wishlist" : "product_added_to_wishlist",
         { product_id: product.id, product_name: product.name },
       );
       return alreadyWishlisted
@@ -207,7 +207,7 @@ function App() {
     content = (
       <div className="flex h-dvh flex-col overflow-hidden bg-black text-white">
         <div
-          className={`flex h-full w-full flex-col ${
+          className={`grid h-full w-full grid-rows-[auto_1fr] ${
             cart.length > 0 ? "pb-24" : ""
           }`}
         >
@@ -218,37 +218,35 @@ function App() {
             onNewUser={handleNewUser}
           />
 
-          <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
-            <CategoryGrid
-              activeCategory={activeCategory}
-              onSelect={handleCategorySelect}
-            />
+          <CategoryGrid
+            activeCategory={activeCategory}
+            onSelect={handleCategorySelect}
+          />
 
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              capture="environment"
-              className="hidden"
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (file) handleSelect(file);
-                e.target.value = "";
-              }}
-            />
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            capture="environment"
+            className="hidden"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) handleSelect(file);
+              e.target.value = "";
+            }}
+          />
 
-            <input
-              ref={galleryInputRef}
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (file) handleSelect(file);
-                e.target.value = "";
-              }}
-            />
-          </div>
+          <input
+            ref={galleryInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) handleSelect(file);
+              e.target.value = "";
+            }}
+          />
         </div>
       </div>
     );

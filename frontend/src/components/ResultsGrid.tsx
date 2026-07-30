@@ -63,7 +63,12 @@ export function ResultsGrid({ matches, wishlistIds, onView, onToggleWishlist }: 
                 <p className="truncate text-xs font-medium text-white">
                   {match.name}
                 </p>
-                <p className="text-[11px] text-gold/80">
+                {match.price != null && (
+                  <p className="text-[11px] text-gold/80">
+                    ₹{Math.round(match.price).toLocaleString("en-IN")}
+                  </p>
+                )}
+                <p className="text-[11px] text-neutral-500">
                   {Math.round(match.similarity * 100)}% match
                 </p>
               </div>

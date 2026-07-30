@@ -75,10 +75,10 @@ next reset. `session_started` / `session_ended` bound each session.
 | `search_performed` | `{ query, source }` | A voice or typed search is actually submitted — `source` is `"voice"` or `"text"` |
 | `filter_applied` | `{ filter_type, value, category }` | An Age Group / Price Band / Usage filter is selected on the Refine Search screen |
 | `product_viewed` | `{ product_id, product_name, category_name }` | A search-result product card is tapped |
-| `product_added_to_cart` | `{ product_id, product_name }` | The wishlist heart is tapped on a product not yet wishlisted (cart and wishlist are the same list) |
+| `product_added_to_wishlist` | `{ product_id, product_name }` | The wishlist heart is tapped on a product not yet wishlisted |
 | `product_removed_from_wishlist` | `{ product_id, product_name }` | The wishlist heart is tapped on an already-wishlisted product, or its remove (X) button is tapped on the Wishlist screen |
 | `order_completed` | `{ total_amount, item_count }` | The "Let's connect" name + phone popup is submitted successfully |
-| `order_abandoned` | `{ item_count }` | New User tapped while cart still has items (customer walked away) |
+| `order_abandoned` | `{ item_count }` | New User tapped while the wishlist still has items (customer walked away) |
 
 **Note on leads (PII):** submitting the "Let's connect" popup does **not** log a kiosk_event — name and phone are PII and don't belong in an append-only, unauthenticated-write log the way the events above do. Instead it hits `POST /leads` (see `app/routers/leads.py`), which upserts into a dedicated `leads` table keyed by (normalized) phone number — a repeat submission from the same customer, even across separate kiosk sessions, updates one row instead of creating a duplicate. That row's `session_ids` array accumulates every kiosk `session_id` that phone has ever submitted under, so a customer's full activity history across all their visits (every event above, for any of those sessions) can be pulled with:
 
