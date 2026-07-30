@@ -1,9 +1,27 @@
 @import "tailwindcss";
 
+@font-face {
+  font-family: "Olivera";
+  src: url("/Olivera_Demo.ttf") format("truetype");
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Olivera";
+  src: url("/OliveraObl_Demo.ttf") format("truetype");
+  font-weight: normal;
+  font-style: oblique;
+  font-display: swap;
+}
+
 @theme {
-  --color-gold: #d4af37;
-  --color-gold-soft: #c9a24b;
-  --font-serif-display: ui-serif, Georgia, Cambria, "Times New Roman", serif;
+  --color-gold: #ffffff;
+  --color-gold-soft: #f5f5f5;
+  --font-serif-display: "Cormorant Garamond", ui-serif, Georgia, Cambria, "Times New Roman", serif;
+  --font-sans: "Manrope", ui-sans-serif, system-ui, sans-serif;
+  --font-category: "Olivera", "Cormorant Garamond", ui-serif, serif;
 }
 
 :root {
@@ -13,6 +31,7 @@
 body {
   margin: 0;
   background: #000;
+  font-family: var(--font-sans);
 }
 
 @keyframes wave {

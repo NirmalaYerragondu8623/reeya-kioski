@@ -16,9 +16,12 @@ duplicate rows.
 Note on scope: the teammate's API deliberately excludes internal cost
 breakdown (diamond/gold cost, making charge, tax) — only the final
 customer-facing `price` is available, and that's intentional (margin data).
-Don't add fields to pull that data without checking with them first. Products
-missing from the feed are usually just toggled off ("Show in kiosk") on their
-end, not a bug here.
+Don't add fields to pull that data without checking with them first.
+
+The feed now includes a WordPress `status` field (e.g. "publish", "draft",
+"pending") per product — the feed itself is no longer pre-filtered to
+kiosk-visible products, so we only upsert `status == "publish"` rows here.
+Anything else (draft/pending/etc.) is skipped, same as a missing image.
 """
 
 import logging
@@ -76,10 +79,22 @@ def upsert_products(products: list[dict]) -> None:
     per product; we store just the first category and first (featured) image,
     matching this project's single-category/single-image schema. Products
     with no images can't be embedded, so they're skipped with a log line.
+
+    Only `status == "publish"` products are indexed — draft/pending/etc. are
+    not meant to be visible in the kiosk.
     """
     supabase = get_supabase_client()
     records = []
     for product in products:
+        if product.get("status") != "publish":
+            logger.info(
+                "Skipping product id=%s (%s): status=%s",
+                product["id"],
+                product.get("name"),
+                product.get("status"),
+            )
+            continue
+
         images = product.get("images") or []
         # Some catalog entries return a non-URL placeholder (e.g. `false`) as
         # an image entry instead of omitting it — only accept real strings.
