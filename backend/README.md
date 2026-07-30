@@ -1,11 +1,11 @@
 # Image Search Backend (Jewelry Shopping App)
 
 FastAPI backend that lets a user upload a photo and find visually similar
-products in the catalog (CLIP embeddings + pgvector similarity search),
-search by voice (transcript → LLM filter extraction → structured product
-query — transcription itself happens client-side in the browser, not here),
-and log kiosk analytics events — all against Supabase (Postgres). See
-`ANALYTICS.md` for the analytics event catalog and example queries.
+products in the catalog (Gemini Embedding 2, hosted, + pgvector similarity
+search), search by voice (transcript → LLM filter extraction → structured
+product query — transcription itself happens client-side in the browser,
+not here), and log kiosk analytics events — all against Supabase (Postgres).
+See `ANALYTICS.md` for the analytics event catalog and example queries.
 
 ## Project structure
 
@@ -37,7 +37,9 @@ scripts/
    - `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` — from Supabase project settings.
      The service role key bypasses Row Level Security, so keep it server-side only.
    - `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_REGION`, `S3_BUCKET_NAME`
-   - `EMBEDDING_MODEL_NAME` — defaults to `openai/clip-vit-base-patch32`
+   - `EMBEDDING_MODEL_NAME` — defaults to `gemini-embedding-2-preview`
+   - `GEMINI_API_KEY` — from [Google AI Studio](https://aistudio.google.com/apikey);
+     used by `app/services/embeddings.py`
    - `PRESIGN_EXPIRY_SECONDS` — how long a presigned upload URL stays valid (default 300s)
    - `PRODUCT_API_URL` — your teammate's product-image API (see `scripts/index_catalog.py`)
    - `OPENAI_API_KEY` — used by `app/services/extract_filters.py` (structured
@@ -50,9 +52,9 @@ scripts/
    source .venv/bin/activate  # or .venv\Scripts\activate on Windows
    pip install -r requirements.txt
    ```
-   `torch` is CPU-only by default via the pinned version on PyPI; if you need
-   GPU acceleration, install the appropriate CUDA build from
-   https://pytorch.org/get-started/locally/ instead before running `pip install -r requirements.txt`.
+   No heavy ML dependencies (`torch`/`transformers`) — embeddings are hosted
+   via the Gemini API, so this installs quickly and runs comfortably even on
+   small/free-tier deployment instances.
 
 3. **Run the SQL migrations** in the Supabase SQL editor, **in order**:
    - `001_enable_pgvector.sql`
@@ -193,10 +195,14 @@ recent first — for a future "search history" screen.
 
 Everything that calls embeddings goes through
 `app.services.embeddings.get_image_embedding(image_bytes: bytes) -> list[float]`.
-To swap CLIP-running-locally for a hosted API (e.g. Replicate):
+This originally ran CLIP locally via `torch`/`transformers`, but that was
+swapped out for the hosted Gemini Embedding 2 API specifically because the
+in-process model was crashing the deployed backend (Render OOM at the free
+tier's 512MB limit) — running embeddings as a hosted API call removes that
+memory footprint entirely. To swap providers again later (e.g. Replicate):
 
 1. Rewrite the body of `get_image_embedding` in `app/services/embeddings.py`
-   to call the hosted API instead of running the local model.
+   to call the new provider instead.
 2. Update `EMBEDDING_MODEL_NAME` (used to tag rows and detect staleness in
    `index_catalog.py`) to reflect the new model/version.
 3. Re-run `python -m scripts.index_catalog` — every existing row will be
@@ -256,15 +262,15 @@ the Render dashboard, connect this repo, it reads the file automatically.
 Set `rootDir: backend` (already in the file) since this is a monorepo.
 
 Notes specific to this project:
-- **Plan size:** `torch`/`transformers` (CLIP) need more RAM than Render's
-  free 512MB tier reliably provides — the blueprint defaults to `standard`.
+- **Plan size:** embeddings are a hosted API call (Gemini), not an in-process
+  model, so this no longer needs `standard`-tier RAM the way the old
+  local-CLIP setup did — the Free tier's 512MB is enough. (This project
+  previously crashed on Render's free tier with OOM errors under
+  `torch`/`transformers`; that's specifically what this swap fixed.)
 - **Env vars:** everything in `.env.example` must be set in the Render
   dashboard (marked `sync: false` in `render.yaml` so they're never
   committed). Include `ALLOWED_ORIGINS` with your deployed frontend's exact
-  URL once you know it (see `app/main.py`'s CORS middleware).
-- **Cold start / model cache:** the CLIP model downloads from HuggingFace on
-  first use (lazy-loaded, see `embeddings.py`) and isn't cached across
-  deploys on Render's default ephemeral disk — the first embedding request
-  after each deploy will be slower while it re-downloads.
+  URL once you know it, and `GEMINI_API_KEY` (see `app/main.py`'s CORS
+  middleware and `app/services/embeddings.py`).
 - **Health check:** `/health` is already wired up; Render uses
   `healthCheckPath` from the blueprint for zero-downtime deploys.

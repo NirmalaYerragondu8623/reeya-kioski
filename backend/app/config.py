@@ -16,8 +16,11 @@ class Settings(BaseSettings):
     aws_region: str
     s3_bucket_name: str
 
-    # Embeddings
-    embedding_model_name: str = "openai/clip-vit-base-patch32"
+    # Embeddings: hosted via the Gemini API (see app/services/embeddings.py) —
+    # switched from a locally-run CLIP model to remove the torch/transformers
+    # memory footprint that was crashing Render's backend (OOM at 512MB).
+    embedding_model_name: str = "gemini-embedding-2-preview"
+    gemini_api_key: str = ""
 
     # Presigned uploads
     presign_expiry_seconds: int = 300

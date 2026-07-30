@@ -12,6 +12,10 @@ app.add_middleware(
     allow_origin_regex=get_settings().allowed_origin_regex,
     allow_methods=["*"],
     allow_headers=["*"],
+    # navigator.sendBeacon (used by the analytics /events calls) always sends
+    # requests with credentials mode "include", so the browser requires this
+    # header back even though we don't actually rely on cookies/auth here.
+    allow_credentials=True,
 )
 
 app.include_router(uploads.router)
