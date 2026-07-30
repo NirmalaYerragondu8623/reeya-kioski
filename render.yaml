@@ -2,6 +2,13 @@
 # New -> Blueprint -> connect this repo -> Render reads this file automatically.
 # Env vars marked sync: false must be filled in manually in the Render
 # dashboard after the service is created (never commit real secrets here).
+#
+# NOTE: the actual deployed service is currently named "reeya-kioski" (not
+# "reeya-kioski-backend" below) at https://reeya-kioski.onrender.com, and is
+# running on the Free plan rather than `standard` — it was set up manually
+# rather than via this Blueprint. Free tier risk: torch/transformers (CLIP)
+# need more than 512MB RAM once /image-search actually loads the model —
+# worth upgrading the plan if that endpoint starts failing/crashing under load.
 services:
   - type: web
     name: reeya-kioski-backend
@@ -36,3 +43,5 @@ services:
         sync: false
       - key: ALLOWED_ORIGINS
         sync: false  # e.g. https://your-frontend.vercel.app,http://localhost:5173
+      - key: ALLOWED_ORIGIN_REGEX
+        value: '^https://.*\.vercel\.app$'  # matches Vercel preview deployments too

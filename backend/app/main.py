@@ -9,6 +9,7 @@ app = FastAPI(title="Reeya Kioski - Image Search API")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=get_settings().allowed_origins_list,
+    allow_origin_regex=get_settings().allowed_origin_regex,
     allow_methods=["*"],
     allow_headers=["*"],
 )

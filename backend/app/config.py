@@ -37,6 +37,12 @@ class Settings(BaseSettings):
     # needed for local dev.
     allowed_origins: str = "http://localhost:5173"
 
+    # Additionally allow any Vercel preview deployment (they get a new random
+    # subdomain per push/PR, e.g. reeya-kioski-<hash>-<team>.vercel.app, so a
+    # fixed list in allowed_origins can never keep up with them). Broad by
+    # design for dev convenience; narrow this if that's ever a concern.
+    allowed_origin_regex: str = r"^https://.*\.vercel\.app$"
+
     @property
     def allowed_origins_list(self) -> list[str]:
         return [origin.strip() for origin in self.allowed_origins.split(",") if origin.strip()]
