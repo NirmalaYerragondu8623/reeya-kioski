@@ -96,6 +96,20 @@ class SearchHistoryItem(BaseModel):
     created_at: datetime
 
 
+# --- Leads (see app/routers/leads.py) ---
+
+class LeadRequest(BaseModel):
+    session_id: UUID
+    name: str
+    phone: str
+    item_count: int
+    total_amount: float
+
+
+class LeadResponse(BaseModel):
+    id: UUID
+
+
 # --- Kiosk analytics (see ANALYTICS.md) ---
 
 class KioskEventRequest(BaseModel):

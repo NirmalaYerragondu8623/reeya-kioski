@@ -8,6 +8,7 @@ import { Wishlist } from "./components/Wishlist";
 import {
   clearVoiceSearchCache,
   findSimilarProducts,
+  submitLead,
   type ProductMatch,
   type VoiceMatch,
   type WishlistItem,
@@ -28,7 +29,6 @@ function App() {
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [voiceQuery, setVoiceQuery] = useState<string | null>(null);
   const [cart, setCart] = useState<WishlistItem[]>([]);
-  const [orderMessage, setOrderMessage] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const galleryInputRef = useRef<HTMLInputElement>(null);
 
@@ -109,7 +109,6 @@ function App() {
     clearVoiceSearchCache();
 
     setCart([]);
-    setOrderMessage(null);
     setPreviewUrl(null);
     setStatus("idle");
     setMatches([]);
@@ -120,14 +119,12 @@ function App() {
     setView("products");
   }
 
-  function handlePlaceOrder() {
-    trackEvent("order_completed", {
-      total_amount: cartTotal(cart),
-      item_count: cart.length,
-    });
+  async function handlePlaceOrder(name: string, phone: string) {
+    const itemCount = cart.length;
+    const totalAmount = cartTotal(cart);
+    await submitLead(name, phone, itemCount, totalAmount);
+    trackEvent("order_completed", { total_amount: totalAmount, item_count: itemCount });
     setCart([]);
-    setOrderMessage("Order placed — thank you!");
-    window.setTimeout(() => setOrderMessage(null), 3000);
   }
 
   async function handleSelect(file: File) {
@@ -238,12 +235,6 @@ function App() {
                 e.target.value = "";
               }}
             />
-
-            {orderMessage && (
-              <p className="px-5 pt-6 text-center text-sm text-gold">
-                {orderMessage}
-              </p>
-            )}
           </div>
         </div>
       </div>

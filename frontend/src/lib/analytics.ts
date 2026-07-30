@@ -39,6 +39,11 @@ export function trackEvent(eventName: string, payload: Record<string, unknown> =
   send(eventName, payload);
 }
 
+/** The current kiosk session id, so other backend calls (e.g. leads) can be linked to it. */
+export function getSessionId(): string | null {
+  return sessionId;
+}
+
 /** Resumes the stored session (if any) or starts a fresh one — call once on app load. */
 export function initSession(): string {
   if (sessionId) return sessionId;

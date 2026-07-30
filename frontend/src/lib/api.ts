@@ -1,3 +1,5 @@
+import { getSessionId } from "./analytics";
+
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "/api";
 
 export interface PresignResponse {
@@ -181,4 +183,39 @@ export function voiceSearch(
   // block retrying the same search later in the session.
   promise.catch(() => voiceSearchCache.delete(cacheKey));
   return promise;
+}
+
+// --- Leads ("Let's connect") ---
+
+export interface LeadResponse {
+  id: string;
+}
+
+/**
+ * Submits a "Let's connect" contact request. The backend upserts by phone
+ * number — a repeat submission from the same customer, even across separate
+ * kiosk sessions, updates one record instead of creating a duplicate, and
+ * accumulates this session's id so their full activity history stays linked.
+ */
+export async function submitLead(
+  name: string,
+  phone: string,
+  itemCount: number,
+  totalAmount: number,
+): Promise<LeadResponse> {
+  const res = await fetch(`${API_BASE}/leads`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      session_id: getSessionId(),
+      name,
+      phone,
+      item_count: itemCount,
+      total_amount: totalAmount,
+    }),
+  });
+  if (!res.ok) {
+    throw new Error(`Lead submission failed: ${res.status} ${await res.text()}`);
+  }
+  return res.json();
 }

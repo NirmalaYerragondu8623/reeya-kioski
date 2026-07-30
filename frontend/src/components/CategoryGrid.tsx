@@ -97,7 +97,7 @@ export function CategoryGrid({ onSelect, activeCategory }: CategoryGridProps) {
   return (
     <div className="flex w-full flex-col justify-center gap-6 px-4 py-3">
       {[topRow, bottomRow].map((row, i) => (
-        <div key={i} className="flex w-full justify-evenly">
+        <div key={i} className="flex w-full justify-between">
           {row.map(({ label, Icon }) => (
             <CategoryTile
               key={label}
