@@ -163,7 +163,7 @@ export function RefineSearch({
 
   return (
     <div className="min-h-screen bg-black text-white">
-      <div className="mx-auto max-w-3xl pb-16">
+      <div className="mx-auto max-w-4xl pb-16">
         <header className="relative px-5 pt-6 text-center">
           <button
             type="button"
@@ -224,7 +224,7 @@ export function RefineSearch({
                 <button
                   type="button"
                   onClick={() => setOpenFilterKey(isOpen ? null : filter.key)}
-                  className={`flex w-full flex-col items-center gap-1 rounded-xl border px-2 py-2.5 text-center ${
+                  className={`flex w-full items-center justify-center gap-1.5 rounded-xl border px-2 py-2.5 text-center ${
                     isOpen || filter.value ? "border-white/40" : "border-white/10"
                   }`}
                 >
@@ -271,7 +271,7 @@ export function RefineSearch({
         )}
         {!isLoading && !fetchError && result && result.matches.length > 0 && (
           <section className="px-5 pt-6">
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-3 gap-3">
               {result.matches.map((match) => (
                 <button
                   key={match.id}

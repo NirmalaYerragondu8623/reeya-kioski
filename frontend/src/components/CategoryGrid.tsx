@@ -59,31 +59,56 @@ function CategoryThumbnail({
   );
 }
 
-export function CategoryGrid({ onSelect, activeCategory }: CategoryGridProps) {
+function CategoryTile({
+  label,
+  Icon,
+  isActive,
+  onSelect,
+}: {
+  label: string;
+  Icon: ComponentType<SVGProps<SVGSVGElement>>;
+  isActive: boolean;
+  onSelect?: (label: string) => void;
+}) {
   return (
-    <div className="grid grid-cols-3 gap-x-6 gap-y-2 px-5 py-4">
-      {CATEGORIES.map(({ label, Icon }) => {
-        const isActive = activeCategory === label;
-        return (
-          <button
-            key={label}
-            type="button"
-            onClick={() => onSelect?.(isActive ? "" : label)}
-            className="flex flex-col items-center gap-0.5"
-          >
-            <div
-              className={`aspect-square w-full overflow-hidden rounded-xl border-2 bg-neutral-950 transition-colors ${
-                isActive ? "border-gold" : "border-black"
-              }`}
-            >
-              <CategoryThumbnail label={label} Icon={Icon} />
-            </div>
-            <span className="shrink-0 font-category text-xs tracking-wide text-gold">
-              {label}
-            </span>
-          </button>
-        );
-      })}
+    <button
+      type="button"
+      onClick={() => onSelect?.(isActive ? "" : label)}
+      className="flex w-36 shrink-0 flex-col items-center gap-1.5"
+    >
+      <div
+        className={`aspect-square w-full overflow-hidden rounded-xl border-2 bg-neutral-950 transition-colors ${
+          isActive ? "border-gold" : "border-black"
+        }`}
+      >
+        <CategoryThumbnail label={label} Icon={Icon} />
+      </div>
+      <span className="shrink-0 font-category text-lg tracking-[2px] text-gold">
+        {label}
+      </span>
+    </button>
+  );
+}
+
+export function CategoryGrid({ onSelect, activeCategory }: CategoryGridProps) {
+  const topRow = CATEGORIES.slice(0, 3);
+  const bottomRow = CATEGORIES.slice(3, 6);
+
+  return (
+    <div className="flex flex-col justify-center gap-6 px-4 py-3">
+      {[topRow, bottomRow].map((row, i) => (
+        <div key={i} className="flex justify-evenly">
+          {row.map(({ label, Icon }) => (
+            <CategoryTile
+              key={label}
+              label={label}
+              Icon={Icon}
+              isActive={activeCategory === label}
+              onSelect={onSelect}
+            />
+          ))}
+        </div>
+      ))}
     </div>
   );
 }

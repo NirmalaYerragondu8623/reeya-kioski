@@ -2,15 +2,15 @@ import { useEffect, useRef, useState } from "react";
 import { CartBar } from "./components/CartBar";
 import { CATEGORY_LABELS, CategoryGrid } from "./components/CategoryGrid";
 import { Header } from "./components/Header";
+import { ImageSearchResults } from "./components/ImageSearchResults";
 import { RefineSearch } from "./components/RefineSearch";
-import { ResultsGrid } from "./components/ResultsGrid";
 import { UploadedImages, type UploadedImage } from "./components/UploadedImages";
 import { findSimilarProducts, type ProductMatch, type VoiceMatch } from "./lib/api";
 import { initSession, trackEvent } from "./lib/analytics";
 import { cartTotal } from "./lib/cart";
 
 type Status = "idle" | "loading" | "done" | "error";
-type View = "products" | "refine";
+type View = "products" | "refine" | "image-results";
 
 function App() {
   const [view, setView] = useState<View>("products");
@@ -85,12 +85,17 @@ function App() {
     window.setTimeout(() => setOrderMessage(null), 3000);
   }
 
+  function handleRemoveUploadedImage(id: string) {
+    setUploadedImages((prev) => prev.filter((image) => image.id !== id));
+  }
+
   async function handleSelect(file: File) {
     const url = URL.createObjectURL(file);
     setPreviewUrl(url);
     setUploadedImages((prev) => [{ id: crypto.randomUUID(), url }, ...prev]);
     setStatus("loading");
     setError(null);
+    setView("image-results");
     try {
       const result = await findSimilarProducts(
         file,
@@ -102,6 +107,14 @@ function App() {
       setError(err instanceof Error ? err.message : "Something went wrong");
       setStatus("error");
     }
+  }
+
+  function handleBackFromImageResults() {
+    setStatus("idle");
+    setPreviewUrl(null);
+    setMatches([]);
+    setError(null);
+    setView("products");
   }
 
   if (view === "refine") {
@@ -124,10 +137,24 @@ function App() {
     );
   }
 
+  if (view === "image-results" && previewUrl) {
+    return (
+      <ImageSearchResults
+        previewUrl={previewUrl}
+        status={status === "idle" ? "loading" : status}
+        matches={matches}
+        error={error}
+        onBack={handleBackFromImageResults}
+        onView={handleProductView}
+        onAddToCart={handleAddToCart}
+      />
+    );
+  }
+
   return (
     <div className="flex h-dvh flex-col overflow-hidden bg-black text-white">
       <div
-        className={`mx-auto flex h-full w-full max-w-3xl flex-col ${
+        className={`mx-auto flex h-full w-full max-w-4xl flex-col ${
           cart.length > 0 ? "pb-24" : ""
         }`}
       >
@@ -144,7 +171,10 @@ function App() {
             />
           </div>
 
-          <UploadedImages images={uploadedImages} />
+          <UploadedImages
+            images={uploadedImages}
+            onRemove={handleRemoveUploadedImage}
+          />
 
           <input
             ref={fileInputRef}
@@ -159,32 +189,6 @@ function App() {
             }}
           />
 
-          {status === "loading" && (
-            <div className="flex flex-col items-center gap-3 px-5 pt-6">
-              {previewUrl && (
-                <img
-                  src={previewUrl}
-                  alt="Your upload"
-                  className="size-16 rounded-lg border border-white/10 object-cover"
-                />
-              )}
-              <p className="text-center text-sm text-neutral-400">
-                Searching the catalog...
-              </p>
-            </div>
-          )}
-          {status === "error" && (
-            <p className="px-5 pt-6 text-center text-sm text-red-400">
-              {error}
-            </p>
-          )}
-          {status === "done" && (
-            <ResultsGrid
-              matches={matches}
-              onView={handleProductView}
-              onAddToCart={handleAddToCart}
-            />
-          )}
           {orderMessage && (
             <p className="px-5 pt-6 text-center text-sm text-gold">
               {orderMessage}

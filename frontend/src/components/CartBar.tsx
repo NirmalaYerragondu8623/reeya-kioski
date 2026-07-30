@@ -13,7 +13,7 @@ export function CartBar({ items, onPlaceOrder }: CartBarProps) {
 
   return (
     <div className="fixed inset-x-0 bottom-0 z-10 border-t border-gold/30 bg-black/95 px-5 py-3">
-      <div className="mx-auto flex max-w-3xl items-center justify-between gap-3">
+      <div className="mx-auto flex max-w-4xl items-center justify-between gap-3">
         <div>
           <p className="text-xs text-neutral-400">
             {items.length} item{items.length > 1 ? "s" : ""} in cart
