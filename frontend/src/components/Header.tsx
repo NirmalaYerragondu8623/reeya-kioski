@@ -102,8 +102,8 @@ export function Header({ onCameraClick, onUploadClick, onVoiceResult, onNewUser 
         className="mx-auto h-32 w-auto object-contain"
       />
 
-      <div className="-mt-2 flex items-center justify-between gap-2">
-        <div className="flex shrink-0 items-center gap-2 rounded-full border border-gold/50 py-1.5 pr-3 pl-2.5">
+      <div className="-mt-2 flex items-center justify-between gap-3">
+        <div className="flex shrink-0 items-center gap-4 rounded-full border border-gold/50 py-3 pr-5 pl-4">
           <button
             type="button"
             onClick={handleMicClick}
@@ -113,7 +113,7 @@ export function Header({ onCameraClick, onUploadClick, onVoiceResult, onNewUser 
               isListening ? "text-red-400" : "text-gold"
             }`}
           >
-            <MicIcon className={`size-7 ${isListening ? "animate-pulse" : ""}`} />
+            <MicIcon className={`size-10 ${isListening ? "animate-pulse" : ""}`} />
           </button>
           <button
             type="button"
@@ -121,7 +121,7 @@ export function Header({ onCameraClick, onUploadClick, onVoiceResult, onNewUser 
             aria-label="Search by photo"
             className="shrink-0 rounded-full p-0.5 text-gold"
           >
-            <CameraIcon className="size-7" />
+            <CameraIcon className="size-10" />
           </button>
           <button
             type="button"
@@ -129,16 +129,16 @@ export function Header({ onCameraClick, onUploadClick, onVoiceResult, onNewUser 
             aria-label="Search by typing"
             className="shrink-0 rounded-full p-0.5 text-gold"
           >
-            <SearchIcon className="size-7" />
+            <SearchIcon className="size-10" />
           </button>
         </div>
 
         <button
           type="button"
           onClick={onNewUser}
-          className="flex shrink-0 items-center gap-2 rounded-full border border-gold/40 px-4 py-1.5 text-sm font-medium text-gold/80"
+          className="flex shrink-0 items-center gap-2 rounded-full border border-gold/40 px-6 py-3 text-lg font-medium text-gold/80"
         >
-          <RefreshIcon className="size-5" />
+          <RefreshIcon className="size-7" />
           New User
         </button>
       </div>

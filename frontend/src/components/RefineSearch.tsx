@@ -297,7 +297,7 @@ export function RefineSearch({
         )}
         {!isLoading && !fetchError && result && result.matches.length === 0 && (
           <p className="px-5 pt-6 text-center text-sm text-neutral-500">
-            No products match these filters. Try adjusting them above.
+            No results found.
           </p>
         )}
         {!isLoading && !fetchError && result && result.matches.length > 0 && (

@@ -42,8 +42,8 @@ function CategoryThumbnail({
 
   if (!imageSrc || imageFailed) {
     return (
-      <div className="flex size-full items-center justify-center bg-neutral-950">
-        <Icon className="size-10 text-gold" />
+      <div className="flex size-full items-center justify-center bg-black">
+        <Icon className="size-16 text-gold" />
       </div>
     );
   }
@@ -74,16 +74,16 @@ function CategoryTile({
     <button
       type="button"
       onClick={() => onSelect?.(isActive ? "" : label)}
-      className="flex w-44 shrink-0 flex-col items-center gap-1.5"
+      className="flex min-w-0 flex-1 flex-col items-center gap-3"
     >
       <div
-        className={`aspect-square w-full overflow-hidden rounded-xl border-2 bg-neutral-950 transition-colors ${
+        className={`aspect-square w-full overflow-hidden rounded-2xl border-2 bg-black transition-colors ${
           isActive ? "border-gold" : "border-black"
         }`}
       >
         <CategoryThumbnail label={label} Icon={Icon} />
       </div>
-      <span className="shrink-0 font-category text-lg tracking-[2px] text-gold">
+      <span className="shrink-0 font-category text-2xl tracking-[2px] text-gold">
         {label}
       </span>
     </button>
@@ -95,9 +95,9 @@ export function CategoryGrid({ onSelect, activeCategory }: CategoryGridProps) {
   const bottomRow = CATEGORIES.slice(3, 6);
 
   return (
-    <div className="flex w-full flex-col justify-center gap-6 px-4 py-3">
+    <div className="flex h-full w-full flex-1 flex-col justify-evenly gap-8 px-10 py-6">
       {[topRow, bottomRow].map((row, i) => (
-        <div key={i} className="flex w-full justify-between">
+        <div key={i} className="flex w-full gap-8">
           {row.map(({ label, Icon }) => (
             <CategoryTile
               key={label}

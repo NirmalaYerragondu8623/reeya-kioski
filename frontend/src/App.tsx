@@ -207,7 +207,7 @@ function App() {
     content = (
       <div className="flex h-dvh flex-col overflow-hidden bg-black text-white">
         <div
-          className={`mx-auto flex h-full w-full max-w-4xl flex-col ${
+          className={`flex h-full w-full flex-col ${
             cart.length > 0 ? "pb-24" : ""
           }`}
         >
@@ -219,12 +219,10 @@ function App() {
           />
 
           <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
-            <div className="flex min-h-0 flex-1 flex-col justify-center -translate-y-[5%]">
-              <CategoryGrid
-                activeCategory={activeCategory}
-                onSelect={handleCategorySelect}
-              />
-            </div>
+            <CategoryGrid
+              activeCategory={activeCategory}
+              onSelect={handleCategorySelect}
+            />
 
             <input
               ref={fileInputRef}
