@@ -198,3 +198,15 @@ create index if not exists kiosk_events_occurred_at_idx on kiosk_events (occurre
 create index if not exists kiosk_events_payload_gin_idx on kiosk_events using gin (payload);
 
 alter table kiosk_events enable row level security;
+
+-- ===== 013_update_age_group_vocabulary.sql =====
+alter table products drop constraint if exists products_age_group_check;
+alter table products add constraint products_age_group_check
+    check (age_group in ('teens', 'elegant', 'classic'));
+
+alter table search_history drop constraint if exists search_history_age_group_check;
+alter table search_history add constraint search_history_age_group_check
+    check (age_group in ('teens', 'elegant', 'classic'));
+
+-- ===== 014_add_uploaded_images_embedding.sql =====
+alter table uploaded_images add column if not exists embedding vector(512);

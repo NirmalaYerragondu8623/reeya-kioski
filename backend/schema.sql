@@ -7,7 +7,11 @@
 -- 4 tables exist: products, uploaded_images, search_history, kiosk_events.
 -- (products.usage / products.age_group columns exist but are unpopulated —
 -- no source data exists for either; see project notes. Voice searches that
--- extract a usage/age_group filter currently return no matches as a result.)
+-- select a usage/age_group filter don't hard-filter on these columns for
+-- that reason — see app/routers/voice_search.py's RANDOM_SAMPLE_POOL_SIZE
+-- comment — they instead get a random sample from the category/price-band-
+-- filtered pool. age_group's vocabulary is teens/elegant/classic, not age
+-- brackets — see migration 013.)
 
 create extension if not exists vector;
 
@@ -37,7 +41,7 @@ create table products (
         end
     ) stored,
     usage              text check (usage in ('daily_wear', 'office_wear', 'party_wear', 'festive', 'bridal')),      -- unpopulated, see notes
-    age_group          text check (age_group in ('below_18', '18_25', '26_35', '36_45', 'above_45'))                -- unpopulated, see notes
+    age_group          text check (age_group in ('teens', 'elegant', 'classic'))                                    -- unpopulated, see notes
 );
 
 create unique index products_source_product_id_key on products (source_product_id);
@@ -64,6 +68,7 @@ create table uploaded_images (
     user_id               uuid not null,
     s3_url                text not null,        -- the user's uploaded photo (our S3 bucket)
     matched_product_ids   uuid[] not null default '{}',
+    embedding             vector(512),          -- same pgvector column as products.embedding — no separate vector store needed
     created_at            timestamptz not null default now()
 );
 
@@ -142,7 +147,7 @@ create table search_history (
     transcript   text not null,
     category     text check (category in ('earrings', 'pendants', 'necklace', 'rings', 'bangles', 'bracelets')),
     price_band   text check (price_band in ('below_10k', '10k_25k', '25k_50k', '50k_1l', 'above_1l')),
-    age_group    text check (age_group in ('below_18', '18_25', '26_35', '36_45', 'above_45')),
+    age_group    text check (age_group in ('teens', 'elegant', 'classic')),
     usage        text check (usage in ('daily_wear', 'office_wear', 'party_wear', 'festive', 'bridal')),
     search_type  text not null default 'voice',
     created_at   timestamptz not null default now()

@@ -1,4 +1,5 @@
 import logging
+import random
 from uuid import UUID
 
 from fastapi import APIRouter
@@ -13,6 +14,14 @@ logger = logging.getLogger(__name__)
 router = APIRouter(tags=["voice-search"])
 
 MATCH_LIMIT = 20
+
+# products.age_group / products.usage aren't populated by the catalog
+# ingestion pipeline (see schema.sql notes) — hard-filtering on them always
+# returns zero rows. Until that data exists, a wider pool is pulled (still
+# respecting category/price_band, which ARE real) and randomly sampled down
+# to MATCH_LIMIT, so picking an age-group/usage filter shows a plausible set
+# of products in the right category instead of an empty result.
+RANDOM_SAMPLE_POOL_SIZE = 200
 
 
 @router.post("/voice-search", response_model=VoiceSearchResponse)
@@ -53,14 +62,13 @@ def voice_search(payload: VoiceSearchRequest) -> VoiceSearchResponse:
             query = query.lt("price", max_price)
 
     age_group = filters.get("age_group")
-    if age_group:
-        query = query.eq("age_group", age_group)
-
     usage = filters.get("usage")
-    if usage:
-        query = query.eq("usage", usage)
 
-    result = query.limit(MATCH_LIMIT).execute()
+    if age_group or usage:
+        result = query.limit(RANDOM_SAMPLE_POOL_SIZE).execute()
+        sampled = random.sample(result.data, k=min(MATCH_LIMIT, len(result.data)))
+    else:
+        sampled = query.limit(MATCH_LIMIT).execute().data
 
     history = (
         supabase.table("search_history")
@@ -82,7 +90,7 @@ def voice_search(payload: VoiceSearchRequest) -> VoiceSearchResponse:
         search_history_id=history.data[0]["id"],
         transcript=transcript,
         extracted_filters=ExtractedFilters(**filters),
-        matches=[VoiceMatch(**p) for p in result.data],
+        matches=[VoiceMatch(**p) for p in sampled],
     )
 
 

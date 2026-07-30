@@ -68,8 +68,8 @@ Output: {"category": "earrings", "price_band": "25k_50k", "age_group": null, "us
 Transcript: "Show me bridal necklaces above 1 lakh"
 Output: {"category": "necklace", "price_band": "above_1l", "age_group": null, "usage": "bridal"}
 
-Transcript: "Something for my mom, she's above 45, maybe bangles for daily wear"
-Output: {"category": "bangles", "price_band": null, "age_group": "above_45", "usage": "daily_wear"}
+Transcript: "Something for my mom, she likes classic pieces, maybe bangles for daily wear"
+Output: {"category": "bangles", "price_band": null, "age_group": "classic", "usage": "daily_wear"}
 
 Transcript: "What have you got in rings"
 Output: {"category": "rings", "price_band": null, "age_group": null, "usage": null}

@@ -44,6 +44,6 @@ PRICE_BAND_RANGES: dict[str, tuple[float, float | None]] = {
     "above_1l": (100_000, None),
 }
 
-AGE_GROUPS = ["below_18", "18_25", "26_35", "36_45", "above_45"]
+AGE_GROUPS = ["teens", "elegant", "classic"]
 
 USAGE_TYPES = ["daily_wear", "office_wear", "party_wear", "festive", "bridal"]

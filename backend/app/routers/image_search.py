@@ -58,6 +58,7 @@ def image_search(
                 "user_id": str(payload.user_id),
                 "s3_url": payload.s3_url,
                 "matched_product_ids": matched_product_ids,
+                "embedding": embedding,
             }
         )
         .execute()

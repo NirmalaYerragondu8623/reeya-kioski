@@ -4,11 +4,6 @@
 // rather than a label->value dictionary so exact-character mismatches (the
 // labels use an en dash, "–", not a hyphen) can't silently break lookups.
 
-// NOTE: these 3 values (teens/elegant/classic) are NOT yet in the backend's
-// AGE_GROUPS vocabulary (filter_constants.py) or the search_history/products
-// CHECK constraints in schema.sql, which still only allow the old 5 age
-// brackets. Selecting one of these and confirming will fail on the backend
-// (Postgres check-constraint violation) until that side is updated too.
 export const AGE_GROUP_OPTIONS = ["Teens", "Elegant", "Classic"];
 export const AGE_GROUP_VALUES = ["teens", "elegant", "classic"];
 

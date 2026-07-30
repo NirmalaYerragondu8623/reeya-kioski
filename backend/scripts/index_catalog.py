@@ -82,6 +82,16 @@ def upsert_products(products: list[dict]) -> None:
 
     Only `status == "publish"` products are indexed — draft/pending/etc. are
     not meant to be visible in the kiosk.
+
+    Products with no real price (missing or 0 — the teammate feed uses 0 as
+    a placeholder for "not priced yet", not an actual free item) are skipped
+    too: they'd otherwise show up in the kiosk as "₹0", which reads as a data
+    bug rather than a real product.
+
+    Products with "testing" in their name are also skipped — internal test
+    entries in the teammate's WordPress catalog (e.g. someone's scratch entry
+    with a screenshot as its "image") that were never meant to reach the
+    kiosk.
     """
     supabase = get_supabase_client()
     records = []
@@ -92,6 +102,25 @@ def upsert_products(products: list[dict]) -> None:
                 product["id"],
                 product.get("name"),
                 product.get("status"),
+            )
+            continue
+
+        name = product.get("name") or ""
+        if "testing" in name.lower():
+            logger.info("Skipping product id=%s (%s): test entry", product["id"], name)
+            continue
+
+        price = product.get("price")
+        try:
+            has_real_price = price is not None and float(price) > 0
+        except (TypeError, ValueError):
+            has_real_price = False
+        if not has_real_price:
+            logger.info(
+                "Skipping product id=%s (%s): no real price set (price=%r)",
+                product["id"],
+                product.get("name"),
+                price,
             )
             continue
 
