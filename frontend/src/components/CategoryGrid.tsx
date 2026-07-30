@@ -95,7 +95,7 @@ export function CategoryGrid({ onSelect, activeCategory }: CategoryGridProps) {
   const bottomRow = CATEGORIES.slice(3, 6);
 
   return (
-    <div className="flex h-full min-h-0 w-full flex-col justify-start gap-48 px-10 pt-[126px]">
+    <div className="flex h-full min-h-0 w-full flex-col justify-start gap-[123px] px-10 pt-[113px]">
       {[topRow, bottomRow].map((row, i) => (
         <div key={i} className="flex w-full gap-8">
           {row.map(({ label, Icon }) => (
