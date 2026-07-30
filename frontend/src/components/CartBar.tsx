@@ -1,11 +1,11 @@
 import { useState } from "react";
-import type { ProductMatch } from "../lib/api";
+import type { WishlistItem } from "../lib/api";
 import { cartTotal } from "../lib/cart";
 import { ConnectPopup } from "./ConnectPopup";
 import { HeartIcon } from "./icons";
 
 interface CartBarProps {
-  items: ProductMatch[];
+  items: WishlistItem[];
   onPlaceOrder: (name: string, phone: string) => Promise<void>;
   onOpenWishlist: () => void;
 }
