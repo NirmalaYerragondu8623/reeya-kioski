@@ -42,3 +42,10 @@ export function valueToLabel(
   const idx = values.indexOf(value);
   return idx >= 0 ? options[idx] : null;
 }
+
+/** Plural form of labelToValue, for multi-select filter pills. */
+export function labelsToValues(options: string[], values: string[], labels: string[]): string[] {
+  return labels
+    .map((label) => labelToValue(options, values, label))
+    .filter((value): value is string => value !== undefined);
+}

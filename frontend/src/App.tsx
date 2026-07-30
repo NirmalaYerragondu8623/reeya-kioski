@@ -36,17 +36,32 @@ function App() {
     initSession();
   }, []);
 
+  function matchCategoryFromQuery(query: string): string | null {
+    const normalized = query.toLowerCase();
+    return CATEGORY_LABELS.find((label) => normalized.includes(label.toLowerCase())) ?? null;
+  }
+
   function handleQuery(query: string, source: "voice" | "text") {
     trackEvent("search_performed", { query, source });
     setVoiceQuery(query);
-    const normalized = query.toLowerCase();
-    const matched = CATEGORY_LABELS.find((label) =>
-      normalized.includes(label.toLowerCase()),
-    );
+    const matched = matchCategoryFromQuery(query);
     if (matched) {
       setActiveCategory(matched);
     }
     setView("refine");
+  }
+
+  // Called while retrying voice input from inside Refine Search ("Change").
+  // Without re-checking for a category here, saying a different category
+  // than the one the screen opened with left `activeCategory` stuck on the
+  // old value, which RefineSearch always sends as an override — so the new
+  // category's results never actually applied.
+  function handleVoiceUpdated(query: string) {
+    setVoiceQuery(query);
+    const matched = matchCategoryFromQuery(query);
+    if (matched) {
+      setActiveCategory(matched);
+    }
   }
 
   function handleCategorySelect(label: string) {
@@ -167,7 +182,7 @@ function App() {
           setVoiceQuery(null);
           setView("products");
         }}
-        onVoiceUpdated={setVoiceQuery}
+        onVoiceUpdated={handleVoiceUpdated}
         onProductView={handleVoiceProductView}
         onToggleWishlist={handleToggleWishlist}
         wishlistIds={wishlistIds}

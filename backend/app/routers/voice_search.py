@@ -15,50 +15,55 @@ router = APIRouter(tags=["voice-search"])
 MATCH_LIMIT = 20
 
 
+def _merge_filter(extracted: str | None, explicit: list[str] | None) -> list[str] | None:
+    """Explicit multi-select choices (Refine Search's preference pills) fully
+    replace whatever the LLM extracted from the transcript — picking any
+    explicit values means the user overrode that filter, one value or many."""
+    if explicit:
+        return [value.strip().lower() for value in explicit if value.strip()] or None
+    return [extracted] if extracted else None
+
+
 @router.post("/voice-search", response_model=VoiceSearchResponse)
 def voice_search(payload: VoiceSearchRequest) -> VoiceSearchResponse:
     transcript = payload.transcript
     user_id = payload.user_id
-    filters = extract_search_filters(transcript)
+    extracted = extract_search_filters(transcript)
 
-    # Explicit selections (e.g. Refine Search's preference pills) override
-    # whatever the LLM extracted from the transcript. Values are normalized
-    # to lowercase since the frontend's category labels are Title Case
-    # ("Earrings") but our vocabularies/CHECK constraints are lowercase.
-    if payload.category:
-        filters["category"] = payload.category.strip().lower()
-    if payload.price_band:
-        filters["price_band"] = payload.price_band.strip().lower()
-    if payload.age_group:
-        filters["age_group"] = payload.age_group.strip().lower()
-    if payload.usage:
-        filters["usage"] = payload.usage.strip().lower()
+    category = payload.category.strip().lower() if payload.category else extracted.get("category")
+    price_bands = _merge_filter(extracted.get("price_band"), payload.price_band)
+    age_groups = _merge_filter(extracted.get("age_group"), payload.age_group)
+    usages = _merge_filter(extracted.get("usage"), payload.usage)
 
     supabase = get_supabase_client()
     query = supabase.table("products").select("id, name, image_s3_url, price, category")
 
-    category = filters.get("category")
     if category and category in CATEGORY_PATTERNS:
         query = query.filter("category", "imatch", CATEGORY_PATTERNS[category])
 
-    price_band = filters.get("price_band")
-    if price_band and price_band in PRICE_BAND_RANGES:
-        min_price, max_price = PRICE_BAND_RANGES[price_band]
+    valid_bands = [band for band in price_bands or [] if band in PRICE_BAND_RANGES]
+    if valid_bands:
         # price = 0 means "no real price set" (see products.price_range's
         # 'Unknown' bucket), not a genuinely free/near-free item — exclude
         # it explicitly, since price >= 0 would otherwise let it leak into
         # the cheapest band.
-        query = query.gt("price", 0).gte("price", min_price)
-        if max_price is not None:
-            query = query.lt("price", max_price)
+        query = query.gt("price", 0)
+        # Multiple bands are OR'd together (e.g. "Below 10K" or "Above 1L"),
+        # each band itself an AND of its own min/max bounds.
+        or_clauses = []
+        for band in valid_bands:
+            min_price, max_price = PRICE_BAND_RANGES[band]
+            if max_price is not None:
+                or_clauses.append(f"and(price.gte.{min_price},price.lt.{max_price})")
+            else:
+                or_clauses.append(f"price.gte.{min_price}")
+        query = query.or_(",".join(or_clauses))
 
-    age_group = filters.get("age_group")
-    if age_group:
-        query = query.eq("age_group", age_group)
+    if age_groups:
+        query = query.in_("age_group", age_groups)
 
-    usage = filters.get("usage")
-    if usage:
-        query = query.eq("usage", usage)
+    if usages:
+        query = query.in_("usage", usages)
 
     matches = query.limit(MATCH_LIMIT).execute().data
 
@@ -69,9 +74,14 @@ def voice_search(payload: VoiceSearchRequest) -> VoiceSearchResponse:
                 "user_id": str(user_id),
                 "transcript": transcript,
                 "category": category,
-                "price_band": price_band,
-                "age_group": age_group,
-                "usage": usage,
+                # search_history's columns hold a single value each (see
+                # schema.sql CHECK constraints) — when multiple were picked,
+                # only the first is logged here. Product filtering above is
+                # unaffected; this only makes the analytics log lossy for
+                # multi-select searches.
+                "price_band": price_bands[0] if price_bands else None,
+                "age_group": age_groups[0] if age_groups else None,
+                "usage": usages[0] if usages else None,
                 "search_type": "voice",
             }
         )
@@ -81,7 +91,12 @@ def voice_search(payload: VoiceSearchRequest) -> VoiceSearchResponse:
     return VoiceSearchResponse(
         search_history_id=history.data[0]["id"],
         transcript=transcript,
-        extracted_filters=ExtractedFilters(**filters),
+        extracted_filters=ExtractedFilters(
+            category=category,
+            price_band=price_bands,
+            age_group=age_groups,
+            usage=usages,
+        ),
         matches=[VoiceMatch(**p) for p in matches],
     )
 
