@@ -202,36 +202,41 @@ export default function LeadsPage() {
           </p>
         </aside>
 
-        <div className="min-w-0 flex-1 md:pl-[40rem]">
-          <header className="flex items-center justify-between">
-            <h1 className="text-3xl text-purple-950" style={{ fontFamily: "var(--font-serif-display)" }}>
-              Leads
-            </h1>
-            <button
-              type="button"
-              onClick={load}
-              aria-label="Refresh leads"
-              disabled={status === "loading"}
-              className="flex size-9 items-center justify-center rounded-full border border-purple-400 text-purple-800 disabled:opacity-40"
-            >
-              <RefreshIcon className="size-4" />
-            </button>
-          </header>
+        <div className="min-w-0 flex-1 md:pl-[46rem]">
+          {/* Capped width so the cards sit at a fixed size to the left of the
+              flex-1 space instead of stretching to the far right edge of the
+              (very wide) max-w-7xl container. */}
+          <div className="md:max-w-md">
+            <header className="flex items-center justify-between">
+              <h1 className="text-3xl text-purple-950" style={{ fontFamily: "var(--font-serif-display)" }}>
+                Leads
+              </h1>
+              <button
+                type="button"
+                onClick={load}
+                aria-label="Refresh leads"
+                disabled={status === "loading"}
+                className="flex size-9 items-center justify-center rounded-full border border-purple-400 text-purple-800 disabled:opacity-40"
+              >
+                <RefreshIcon className="size-4" />
+              </button>
+            </header>
 
-          {status === "loading" && (
-            <p className="pt-8 text-center text-sm text-purple-700">Loading leads...</p>
-          )}
-          {status === "error" && <p className="pt-8 text-center text-sm text-red-600">{error}</p>}
-          {status === "done" && leads.length === 0 && (
-            <p className="pt-8 text-center text-sm text-purple-700">No leads yet.</p>
-          )}
-          {status === "done" && leads.length > 0 && (
-            <div className="mt-6 flex flex-col gap-3">
-              {leads.map((lead) => (
-                <LeadCard key={lead.id} lead={lead} isNew={newLeadIds.has(lead.id)} />
-              ))}
-            </div>
-          )}
+            {status === "loading" && (
+              <p className="pt-8 text-center text-sm text-purple-700">Loading leads...</p>
+            )}
+            {status === "error" && <p className="pt-8 text-center text-sm text-red-600">{error}</p>}
+            {status === "done" && leads.length === 0 && (
+              <p className="pt-8 text-center text-sm text-purple-700">No leads yet.</p>
+            )}
+            {status === "done" && leads.length > 0 && (
+              <div className="mt-6 flex flex-col gap-3">
+                {leads.map((lead) => (
+                  <LeadCard key={lead.id} lead={lead} isNew={newLeadIds.has(lead.id)} />
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>
