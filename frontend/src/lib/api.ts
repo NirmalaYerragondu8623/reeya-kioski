@@ -229,3 +229,22 @@ export async function submitLead(
   }
   return res.json();
 }
+
+export interface Lead {
+  id: string;
+  name: string;
+  phone: string;
+  item_count: number | null;
+  total_amount: number | null;
+  created_at: string;
+  updated_at: string;
+}
+
+/** Fetches every lead, most recently created first. Single-tenant — no owner scoping. */
+export async function fetchLeads(): Promise<Lead[]> {
+  const res = await fetch(`${API_BASE}/leads`);
+  if (!res.ok) {
+    throw new Error(`Fetching leads failed: ${res.status} ${await res.text()}`);
+  }
+  return res.json();
+}

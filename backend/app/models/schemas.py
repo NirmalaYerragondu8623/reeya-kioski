@@ -113,6 +113,16 @@ class LeadResponse(BaseModel):
     id: UUID
 
 
+class LeadListItem(BaseModel):
+    id: UUID
+    name: str
+    phone: str
+    item_count: int | None
+    total_amount: float | None
+    created_at: datetime
+    updated_at: datetime
+
+
 # --- Kiosk analytics (see ANALYTICS.md) ---
 
 class KioskEventRequest(BaseModel):

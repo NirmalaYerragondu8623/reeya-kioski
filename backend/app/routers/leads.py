@@ -3,10 +3,28 @@ from datetime import datetime, timezone
 
 from fastapi import APIRouter
 
-from app.models.schemas import LeadRequest, LeadResponse
+from app.models.schemas import LeadListItem, LeadRequest, LeadResponse
 from app.services.supabase import get_supabase_client
 
 router = APIRouter(tags=["leads"])
+
+
+@router.get("/leads", response_model=list[LeadListItem])
+def list_leads() -> list[LeadListItem]:
+    """Returns every lead, most recently created first.
+
+    Single-tenant: this kiosk deployment has one store and no user/auth
+    system, so there's no owner to scope by — every lead belongs to whoever
+    is looking at this endpoint.
+    """
+    supabase = get_supabase_client()
+    result = (
+        supabase.table("leads")
+        .select("id, name, phone, item_count, total_amount, created_at, updated_at")
+        .order("created_at", desc=True)
+        .execute()
+    )
+    return [LeadListItem(**row) for row in result.data]
 
 
 def normalize_phone(raw: str) -> str:
