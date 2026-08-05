@@ -18,7 +18,16 @@ services:
     rootDir: backend
     plan: free
     buildCommand: pip install -r requirements.txt
-    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    # --ws wsproto: Render's edge was rejecting every /ws/leads WebSocket
+    # handshake with a 403 (confirmed via uvicorn's own access logs — the
+    # request reaches the app, then gets rejected at the protocol layer,
+    # while plain HTTP works fine). Never reproduced locally with the
+    # default `websockets` backend, pointing at a Render-proxy compatibility
+    # gap with that library specifically. See requirements.txt's comment.
+    # --proxy-headers: standard practice behind any reverse proxy (Render
+    # terminates TLS and forwards plain HTTP) so the app sees the real
+    # client scheme/host instead of the proxy's internal ones.
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT --ws wsproto --proxy-headers
     healthCheckPath: /health
     envVars:
       - key: SUPABASE_URL

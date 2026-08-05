@@ -1,5 +1,15 @@
 fastapi>=0.115
 uvicorn[standard]>=0.34
+# wsproto: alternative WebSocket implementation to the `websockets` library
+# that ships with uvicorn[standard]. See render.yaml's startCommand — Render
+# was rejecting every /ws/leads handshake with a 403 (confirmed via uvicorn's
+# own logs: the request reaches the app, then gets rejected at the WebSocket
+# protocol layer specifically — plain HTTP works fine). This never
+# reproduced locally with the default `websockets` backend, which points at
+# a proxy-compatibility difference between Render's edge and that library's
+# stricter handshake validation. wsproto is the standard swap for exactly
+# this symptom.
+wsproto>=1.2
 pydantic>=2.10
 pydantic-settings>=2.7
 supabase>=2.11

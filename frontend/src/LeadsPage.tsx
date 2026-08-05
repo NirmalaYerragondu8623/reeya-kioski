@@ -172,37 +172,63 @@ export default function LeadsPage() {
   });
 
   return (
-    <div className="min-h-dvh bg-black text-white">
-      <div className="mx-auto max-w-2xl px-5 pt-6 pb-16">
-        <header className="flex items-center justify-between">
-          <h1 className="text-3xl text-gold" style={{ fontFamily: "var(--font-serif-display)" }}>
-            Leads
-          </h1>
-          <button
-            type="button"
-            onClick={load}
-            aria-label="Refresh leads"
-            disabled={status === "loading"}
-            className="flex size-9 items-center justify-center rounded-full border border-gold/40 text-gold/80 disabled:opacity-40"
-          >
-            <RefreshIcon className="size-4" />
-          </button>
-        </header>
+    <div className="relative min-h-dvh text-white">
+      {/* Jewel-toned backdrop, echoing the amethyst crown gems in the Reeya logo.
+          `fixed` (viewport-relative, not document-relative) so it stays the same
+          rich background everywhere on the page, no matter how long the leads
+          list scrolls — an `absolute` layer here would only cover the top of a
+          tall page and fade to flat black further down. */}
+      <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden bg-[#0a0610]">
+        <div className="absolute inset-0 bg-gradient-to-br from-[#1a0f2e] via-[#0a0610] to-[#2b0f22]" />
+        <div className="absolute -top-40 -left-40 size-[30rem] rounded-full bg-purple-600/25 blur-[100px]" />
+        <div className="absolute -top-40 -right-40 size-[30rem] rounded-full bg-fuchsia-600/20 blur-[100px]" />
+        <div className="absolute -bottom-40 -left-40 size-[30rem] rounded-full bg-violet-700/25 blur-[100px]" />
+        <div className="absolute -right-40 -bottom-40 size-[30rem] rounded-full bg-fuchsia-700/20 blur-[100px]" />
+      </div>
 
-        {status === "loading" && (
-          <p className="pt-8 text-center text-sm text-neutral-400">Loading leads...</p>
-        )}
-        {status === "error" && <p className="pt-8 text-center text-sm text-red-400">{error}</p>}
-        {status === "done" && leads.length === 0 && (
-          <p className="pt-8 text-center text-sm text-neutral-500">No leads yet.</p>
-        )}
-        {status === "done" && leads.length > 0 && (
-          <div className="mt-6 flex flex-col gap-3">
-            {leads.map((lead) => (
-              <LeadCard key={lead.id} lead={lead} isNew={newLeadIds.has(lead.id)} />
-            ))}
-          </div>
-        )}
+      <div className="relative mx-auto flex max-w-5xl flex-col gap-8 px-5 py-8 md:flex-row md:items-start">
+        <aside className="flex flex-col items-center gap-4 rounded-3xl border border-gold/20 bg-black/40 p-6 backdrop-blur-sm md:sticky md:top-8 md:w-72 md:shrink-0">
+          <img
+            src="/leads-qr.jpeg"
+            alt="Scan to connect with Reeya"
+            className="w-48 rounded-xl bg-white p-3"
+          />
+          <p className="text-center text-sm text-neutral-300">
+            Scan the QR code to connect with us
+          </p>
+        </aside>
+
+        <div className="min-w-0 flex-1">
+          <header className="flex items-center justify-between">
+            <h1 className="text-3xl text-gold" style={{ fontFamily: "var(--font-serif-display)" }}>
+              Leads
+            </h1>
+            <button
+              type="button"
+              onClick={load}
+              aria-label="Refresh leads"
+              disabled={status === "loading"}
+              className="flex size-9 items-center justify-center rounded-full border border-gold/40 text-gold/80 disabled:opacity-40"
+            >
+              <RefreshIcon className="size-4" />
+            </button>
+          </header>
+
+          {status === "loading" && (
+            <p className="pt-8 text-center text-sm text-neutral-400">Loading leads...</p>
+          )}
+          {status === "error" && <p className="pt-8 text-center text-sm text-red-400">{error}</p>}
+          {status === "done" && leads.length === 0 && (
+            <p className="pt-8 text-center text-sm text-neutral-500">No leads yet.</p>
+          )}
+          {status === "done" && leads.length > 0 && (
+            <div className="mt-6 flex flex-col gap-3">
+              {leads.map((lead) => (
+                <LeadCard key={lead.id} lead={lead} isNew={newLeadIds.has(lead.id)} />
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

@@ -279,6 +279,23 @@ pub/sub layer (Redis pub/sub, or Postgres LISTEN/NOTIFY relayed to all
 instances) instead of the direct in-process broadcast this uses now — not
 needed yet since the deployed Render service runs a single instance.
 
+**Deployment gotcha — Render requires `--ws wsproto`:** uvicorn's default
+WebSocket backend (the `websockets` library, installed via
+`uvicorn[standard]`) worked perfectly in local testing but had every
+`/ws/leads` handshake rejected with a 403 once deployed on Render — confirmed
+via uvicorn's own access logs, which showed the request reaching the app and
+being rejected at the protocol layer, while plain HTTP endpoints on the same
+service worked fine. This never reproduced locally (including with a fresh
+venv matching Render's exact installed versions), pointing at a
+compatibility gap between Render's edge/proxy and that library's handshake
+validation specifically, not a code or version bug. Switching uvicorn to the
+`wsproto` backend (`render.yaml`'s `startCommand`: `--ws wsproto
+--proxy-headers`) is the standard fix for this class of symptom. If this
+service is ever redeployed by hand instead of via `render.yaml` (it
+currently is — see the note at the top of that file), the Start Command
+must be updated to match in the Render dashboard directly, since editing
+`render.yaml` alone doesn't change a manually-configured service.
+
 ## Notes for teammates integrating this later
 
 - The product-image API is treated as an external dependency
