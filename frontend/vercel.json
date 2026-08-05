@@ -1,3 +1,7 @@
 {
-  "rewrites": [{ "source": "/leads", "destination": "/index.html" }]
+  "rewrites": [{ "source": "/leads", "destination": "/index.html" }],
+  "git": {
+    "deploymentEnabled": { "main": false }
+  }
 }
+

@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ClockIcon, CopyIcon, PhoneIcon, RefreshIcon } from "./components/icons";
-import { fetchLeads, type Lead } from "./lib/api";
+import { fetchLeads, getLeadsSocketUrl, type Lead } from "./lib/api";
 
 type Status = "loading" | "done" | "error";
 
@@ -22,7 +22,62 @@ function formatTimestamp(iso: string): string {
   });
 }
 
-function LeadCard({ lead }: { lead: Lead }) {
+/**
+ * Opens /ws/leads once `enabled` becomes true (see LeadsPage: only after the
+ * initial GET /leads fetch has populated the list), and reconnects with
+ * exponential backoff (1s, 2s, 4s... capped at 30s) if the connection drops.
+ * `onNewLead` is kept in a ref so reconnects aren't triggered by every
+ * parent re-render — only `enabled` flipping does that.
+ */
+function useLeadsSocket(enabled: boolean, onNewLead: (lead: Lead) => void) {
+  const onNewLeadRef = useRef(onNewLead);
+  onNewLeadRef.current = onNewLead;
+
+  useEffect(() => {
+    if (!enabled) return;
+
+    let socket: WebSocket | null = null;
+    let reconnectTimer: number | undefined;
+    let cancelled = false;
+    let attempt = 0;
+
+    function connect() {
+      socket = new WebSocket(getLeadsSocketUrl());
+
+      socket.onmessage = (event) => {
+        try {
+          const message = JSON.parse(event.data);
+          if (message?.type === "new_lead" && message.lead) {
+            onNewLeadRef.current(message.lead as Lead);
+          }
+        } catch {
+          // Ignore malformed messages rather than crashing the socket handler.
+        }
+      };
+
+      socket.onopen = () => {
+        attempt = 0; // a clean connection resets the backoff
+      };
+
+      socket.onclose = () => {
+        if (cancelled) return;
+        const delay = Math.min(1000 * 2 ** attempt, 30000);
+        attempt += 1;
+        reconnectTimer = window.setTimeout(connect, delay);
+      };
+    }
+
+    connect();
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(reconnectTimer);
+      socket?.close();
+    };
+  }, [enabled]);
+}
+
+function LeadCard({ lead, isNew }: { lead: Lead; isNew: boolean }) {
   const [copied, setCopied] = useState(false);
 
   async function handleCopy() {
@@ -39,13 +94,24 @@ function LeadCard({ lead }: { lead: Lead }) {
   const cartSummary = formatCartSummary(lead.item_count, lead.total_amount);
 
   return (
-    <div className="rounded-2xl border border-white/10 bg-neutral-950 p-4">
-      <p
-        className="text-lg font-semibold text-gold"
-        style={{ fontFamily: "var(--font-serif-display)" }}
-      >
-        {lead.name}
-      </p>
+    <div
+      className={`rounded-2xl border border-white/10 bg-neutral-950 p-4 ${
+        isNew ? "animate-[lead-in_0.6s_ease-out]" : ""
+      }`}
+    >
+      <div className="flex items-center gap-2">
+        <p
+          className="text-lg font-semibold text-gold"
+          style={{ fontFamily: "var(--font-serif-display)" }}
+        >
+          {lead.name}
+        </p>
+        {isNew && (
+          <span className="rounded-full border border-gold/60 px-2 py-0.5 text-[10px] font-semibold tracking-wide text-gold">
+            New
+          </span>
+        )}
+      </div>
 
       <div className="mt-2 flex items-center gap-3">
         <a href={`tel:${lead.phone}`} className="flex items-center gap-1.5 text-sm text-neutral-200">
@@ -77,6 +143,10 @@ export default function LeadsPage() {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [status, setStatus] = useState<Status>("loading");
   const [error, setError] = useState<string | null>(null);
+  // Ids delivered over the socket this session, purely for the "New" badge —
+  // never cleared on refresh, only reset by a full page reload.
+  const [newLeadIds, setNewLeadIds] = useState<Set<string>>(new Set());
+  const [socketEnabled, setSocketEnabled] = useState(false);
 
   async function load() {
     setStatus("loading");
@@ -85,6 +155,7 @@ export default function LeadsPage() {
       const data = await fetchLeads();
       setLeads(data);
       setStatus("done");
+      setSocketEnabled(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
       setStatus("error");
@@ -94,6 +165,11 @@ export default function LeadsPage() {
   useEffect(() => {
     load();
   }, []);
+
+  useLeadsSocket(socketEnabled, (lead) => {
+    setLeads((prev) => (prev.some((existing) => existing.id === lead.id) ? prev : [lead, ...prev]));
+    setNewLeadIds((prev) => new Set(prev).add(lead.id));
+  });
 
   return (
     <div className="min-h-dvh bg-black text-white">
@@ -123,7 +199,7 @@ export default function LeadsPage() {
         {status === "done" && leads.length > 0 && (
           <div className="mt-6 flex flex-col gap-3">
             {leads.map((lead) => (
-              <LeadCard key={lead.id} lead={lead} />
+              <LeadCard key={lead.id} lead={lead} isNew={newLeadIds.has(lead.id)} />
             ))}
           </div>
         )}

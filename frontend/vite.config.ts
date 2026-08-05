@@ -11,6 +11,10 @@ export default defineConfig({
         target: 'http://localhost:8000',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api/, ''),
+        // The Leads page's /ws/leads WebSocket goes through this same /api
+        // proxy in local dev (see lib/api.ts's getLeadsSocketUrl) — without
+        // this, Vite only proxies plain HTTP and the socket connection fails.
+        ws: true,
       },
     },
     watch: {

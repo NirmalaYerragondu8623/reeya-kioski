@@ -229,6 +229,56 @@ via the browser's Web Speech API and send this backend a transcript
 directly — see git history if server-side transcription is ever needed
 again, e.g. for a client that can't do it locally.)
 
+## Real-time lead notifications (WebSocket)
+
+The Leads page (frontend `src/LeadsPage.tsx`) gets new leads pushed to it
+live instead of polling. No auth/owner/multi-tenant concept exists anywhere
+in this app (see `GET /leads`'s own comment), so this is one broadcast
+channel for every connected client, not a per-owner one.
+
+**End to end:**
+1. Frontend loads `GET /leads` on mount for the existing list, same as
+   before this feature existed.
+2. Once that fetch succeeds, it opens a WebSocket to `/ws/leads`
+   (`lib/api.ts`'s `getLeadsSocketUrl()` — resolves to `wss://<backend>/ws/leads`
+   in production, or through the local dev proxy at `ws://localhost:5173/api/ws/leads`,
+   which `vite.config.ts` forwards via `ws: true` on the existing `/api` proxy entry).
+3. `app/services/leads_ws.py` holds an in-memory `LeadConnectionManager` —
+   just a `set[WebSocket]`, since there's no owner to key by. The
+   `/ws/leads` route (`app/routers/leads.py`) accepts connections into it and
+   removes them on disconnect.
+4. `POST /leads` (`submit_lead`) already upserts by phone number — a repeat
+   submission updates the existing row, a new phone number inserts one. Only
+   the **insert** branch calls `_broadcast_new_lead`, which pushes
+   `{"type": "new_lead", "lead": {...}}` (the same shape `GET /leads`
+   returns) to every connected client. Updates don't broadcast — a returning
+   customer isn't a "new lead" for notification purposes.
+5. Frontend prepends the pushed lead to its in-memory list (no refetch) and
+   marks it with a "New" badge + a brief entrance animation
+   (`@keyframes lead-in` in `index.css`), then reconnects with exponential
+   backoff (1s, 2s, 4s... capped at 30s) if the socket drops, cleaning up on
+   unmount.
+
+**Why leads created outside the API were considered and ruled out:** the
+task this was built against raised Postgres `LISTEN/NOTIFY` or Supabase
+Realtime as an alternative, for leads inserted directly into the table
+rather than through this API. In this project, `leads` rows are *only* ever
+written by `POST /leads` (called from the frontend's "Let's Connect"
+popup) — nothing else touches this table — so broadcasting directly from
+that route after the insert is simpler and has one less moving part than
+subscribing to a separate notify channel for writes that don't happen any
+other way. If a second write path to `leads` is ever added, that's the
+point to revisit this and move to LISTEN/NOTIFY (or Supabase Realtime) so
+both paths funnel through the same broadcast.
+
+**Single-server limitation:** connections live in this process's memory. If
+this backend ever runs multiple instances at once, a lead inserted via the
+instance handling that `POST /leads` call would never reach a staff
+WebSocket connected to a *different* instance. Fixing that needs a shared
+pub/sub layer (Redis pub/sub, or Postgres LISTEN/NOTIFY relayed to all
+instances) instead of the direct in-process broadcast this uses now — not
+needed yet since the deployed Render service runs a single instance.
+
 ## Notes for teammates integrating this later
 
 - The product-image API is treated as an external dependency

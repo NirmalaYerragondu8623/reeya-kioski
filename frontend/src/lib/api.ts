@@ -248,3 +248,17 @@ export async function fetchLeads(): Promise<Lead[]> {
   }
   return res.json();
 }
+
+/**
+ * Builds the /ws/leads WebSocket URL from API_BASE. Handles both shapes
+ * API_BASE can take: a full origin (production, e.g. VITE_API_BASE_URL set
+ * to the deployed backend) or a bare path (local dev's "/api", proxied by
+ * Vite — see vite.config.ts's `ws: true` on that proxy entry).
+ */
+export function getLeadsSocketUrl(): string {
+  if (/^https?:\/\//.test(API_BASE)) {
+    return `${API_BASE.replace(/^http/, "ws")}/ws/leads`;
+  }
+  const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+  return `${protocol}//${window.location.host}${API_BASE}/ws/leads`;
+}

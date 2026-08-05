@@ -1,10 +1,15 @@
+import logging
 import re
 from datetime import datetime, timezone
 
-from fastapi import APIRouter
+import anyio
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 
 from app.models.schemas import LeadListItem, LeadRequest, LeadResponse
+from app.services.leads_ws import manager
 from app.services.supabase import get_supabase_client
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["leads"])
 
@@ -25,6 +30,27 @@ def list_leads() -> list[LeadListItem]:
         .execute()
     )
     return [LeadListItem(**row) for row in result.data]
+
+
+@router.websocket("/ws/leads")
+async def leads_websocket(websocket: WebSocket) -> None:
+    """Pushes `{"type": "new_lead", "lead": {...}}` for every brand-new lead
+    (see `submit_lead`'s broadcast call below) to every connected client.
+
+    No owner_id in the path — same reasoning as GET /leads above, this is a
+    single broadcast channel, not a per-owner one. The client is never
+    expected to send anything; `receive_text()` here exists purely to block
+    until the browser closes the connection, so it raises
+    WebSocketDisconnect and the `finally` block can deregister it.
+    """
+    await manager.connect(websocket)
+    try:
+        while True:
+            await websocket.receive_text()
+    except WebSocketDisconnect:
+        pass
+    finally:
+        manager.disconnect(websocket)
 
 
 def normalize_phone(raw: str) -> str:
@@ -83,5 +109,27 @@ def submit_lead(payload: LeadRequest) -> LeadResponse:
             .execute()
         )
         lead_id = inserted.data[0]["id"]
+        _broadcast_new_lead(inserted.data[0])
 
     return LeadResponse(id=lead_id)
+
+
+def _broadcast_new_lead(row: dict) -> None:
+    """Pushes a brand-new lead to connected WebSocket clients.
+
+    Only called for genuine inserts (a new phone number) — a repeat
+    submission from an existing customer updates their row instead, which
+    isn't a "new lead" for notification purposes.
+
+    This route handler is a plain `def`, so FastAPI runs it in a worker
+    thread rather than on the event loop (see Starlette's
+    `run_in_threadpool`) — `anyio.from_thread.run` is the documented way to
+    call back into an async function from that thread. Broadcasting is
+    best-effort: if it fails for any reason, the lead is already safely
+    saved, so this only logs rather than raising.
+    """
+    try:
+        lead = LeadListItem(**row).model_dump(mode="json")
+        anyio.from_thread.run(manager.broadcast_new_lead, lead)
+    except Exception:
+        logger.exception("Failed to broadcast new lead over WebSocket")
